@@ -15,7 +15,9 @@ export default function TableEditor() {
       const loaded = loadRowsFromStorage();
       if (loaded.tables.length > 0) {
         setTables(loaded.tables);
-        const maxId = loaded.tables.flatMap(t => t.rows).reduce((max, row) => Math.max(max, row.id), 0);
+        const maxId = loaded.tables
+        .flatMap((t: TableData) => t.rows)
+        .reduce((max: number, row: Row) => Math.max(max, row.id), 0);
         setCounter(maxId + 1 || 1);
       } else {
         setTables([]);
