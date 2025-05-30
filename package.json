@@ -5,7 +5,8 @@
   "homepage": "https://Vasia911119.github.io/forest-app",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build && next export",
+    "build": "next build",
+    "export": "next export",
     "deploy": "gh-pages -d out",
     "start": "next start",
     "lint": "next lint"
