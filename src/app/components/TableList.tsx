@@ -8,7 +8,7 @@ interface TableListProps {
   tables: TableData[];
   setTables: (tables: TableData[]) => void;
   counter: number;
-  setCounter: (counter: number) => void;
+  setCounter: (counter: number | ((prev: number) => number)) => void;
   debouncedSave: (data: { tables: TableData[] }) => void;
 }
 

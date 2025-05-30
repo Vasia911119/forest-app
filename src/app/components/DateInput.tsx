@@ -1,9 +1,10 @@
+import { Row } from '../types/index';
 interface DateInputProps {
   tableId: number;
   date: string;
   setDate: (tableId: number, date: string) => void;
-  saveData: (data: { tableId: number; date: string; rows: any[] }) => void;
-  rows: any[];
+  saveData: (data: { tableId: number; date: string; rows: Row[] }) => void;
+  rows: Row[];
 }
 
 export default function DateInput({ tableId, date, setDate, saveData, rows }: DateInputProps) {
