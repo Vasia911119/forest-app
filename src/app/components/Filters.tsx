@@ -8,7 +8,7 @@ interface FiltersProps {
   handleSort: (field: keyof Row) => void;
 }
 
-export default function Filters({ filter, setFilter, sortBy, sortOrder, handleSort }: FiltersProps) {
+export default function Filters({ filter, setFilter, sortBy, handleSort }: FiltersProps) {
   return (
     <div className="mb-4 sm:mb-2 flex flex-col sm:flex-row gap-4 sm:gap-2 flex-wrap">
       <input
