@@ -2,7 +2,7 @@
   "name": "my-forest-app",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://Vasia911119.github.io/forest-app",
+  "homepage": "forest-app-alpha.vercel.app",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
