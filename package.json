@@ -5,11 +5,10 @@
   "homepage": "https://Vasia911119.github.io/forest-app",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "next build && next export",
+    "deploy": "gh-pages -d out",
     "start": "next start",
-    "lint": "next lint",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "lint": "next lint"
   },
   "dependencies": {
     "chart.js": "^4.4.9",
