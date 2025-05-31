@@ -99,18 +99,18 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
     debouncedSave({ tables: newTables });
   };
 
-  const saveData = (data: { tableId: number; date: string; rows: Row[] }) => {
-    const { tableId, date, rows } = data;
-    if (!date) {
-      console.warn("Attempted to save table with empty date.");
-      return;
-    }
+  // const saveData = (data: { tableId: number; date: string; rows: Row[] }) => {
+  //   const { tableId, date, rows } = data;
+  //   if (!date) {
+  //     console.warn("Attempted to save table with empty date.");
+  //     return;
+  //   }
 
-    const newTables = [...tables];
-    newTables[tableId] = { date, rows };
-    setTables(newTables);
-    debouncedSave({ tables: newTables });
-  };
+  //   const newTables = [...tables];
+  //   newTables[tableId] = { date, rows };
+  //   setTables(newTables);
+  //   debouncedSave({ tables: newTables });
+  // };
 
   return (
     <> {/* Виправлено тут: замість <>> тепер <> */}
