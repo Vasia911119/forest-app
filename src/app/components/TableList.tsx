@@ -1,3 +1,4 @@
+// app/components/TableList.tsx
 import DateInput from './DateInput';
 import EditableDataTable from './EditableDataTable';
 import AddRowButton from './AddRowButton';
@@ -7,16 +8,19 @@ import { purchases } from '../data/purchases';
 interface TableListProps {
   tables: TableData[];
   setTables: (tables: TableData[]) => void;
-  counter: number;
-  setCounter: (counter: number | ((prev: number) => number)) => void;
   debouncedSave: (data: { tables: TableData[] }) => void;
+  deleteTable: (tableIdx: number) => void;
 }
 
-export default function TableList({ tables, setTables, counter, setCounter, debouncedSave }: TableListProps) {
+export default function TableList({ tables, setTables, debouncedSave, deleteTable }: TableListProps) {
   const addRow = (tableId: number) => {
-    const tableIndex = tables.findIndex(t => t.date === tables[tableId].date);
+    if (!tables[tableId].date) {
+      alert('Будь ласка, спочатку введіть дату для цієї таблиці.');
+      return;
+    }
+
     const newRow: Row = {
-      id: counter,
+      id: Date.now(),
       forest: '',
       buyer: '',
       product: '',
@@ -25,88 +29,91 @@ export default function TableList({ tables, setTables, counter, setCounter, debo
       amount: 0,
     };
     const newTables = [...tables];
-    newTables[tableIndex].rows = [...newTables[tableIndex].rows, newRow];
+    newTables[tableId].rows = [...newTables[tableId].rows, newRow];
     setTables(newTables);
     debouncedSave({ tables: newTables });
-    setCounter(prev => prev + 1);
   };
 
   const deleteRow = (tableId: number, id: number) => {
-    const tableIndex = tables.findIndex(t => t.date === tables[tableId].date);
     const newTables = [...tables];
-    newTables[tableIndex].rows = newTables[tableIndex].rows.filter(row => row.id !== id);
-    setTables(newTables);
-    debouncedSave({ tables: newTables });
-  };
-
-  const handleBuyerChange = (tableId: number, index: number, buyer: string) => {
-    const tableIndex = tables.findIndex(t => t.date === tables[tableId].date);
-    const match = purchases.find(p => p.buyer === buyer);
-    const newTables = [...tables];
-    if (match) {
-      newTables[tableIndex].rows[index] = {
-        ...newTables[tableIndex].rows[index],
-        buyer,
-        product: match.product,
-        species: match.species,
-        volume: match.volume,
-        amount: match.amount,
-      };
-    } else {
-      newTables[tableIndex].rows[index] = {
-        ...newTables[tableIndex].rows[index],
-        buyer,
-        product: '',
-        species: '',
-        volume: 0,
-        amount: 0,
-      };
-    }
+    newTables[tableId].rows = newTables[tableId].rows.filter(row => row.id !== id);
     setTables(newTables);
     debouncedSave({ tables: newTables });
   };
 
   const handleFieldChange = (tableId: number, index: number, field: keyof Row, value: string | number) => {
-    const tableIndex = tables.findIndex(t => t.date === tables[tableId].date);
     const newTables = [...tables];
-    if (field === 'volume' || field === 'amount') {
-      const numericValue = Number(value);
-      if (isNaN(numericValue) || numericValue < 0) return;
-      newTables[tableIndex].rows[index] = { ...newTables[tableIndex].rows[index], [field]: numericValue };
+    (newTables[tableId].rows[index][field] as string | number) = value;
+    setTables(newTables);
+    debouncedSave({ tables: newTables });
+  };
+
+  const handleBuyerChange = (tableId: number, index: number, buyer: string) => {
+    const newTables = [...tables];
+    const newRow = { ...newTables[tableId].rows[index], buyer };
+
+    if (!buyer) {
+      newRow.product = '';
+      newRow.species = '';
+      newRow.volume = 0;
+      newRow.amount = 0;
     } else {
-      newTables[tableIndex].rows[index] = { ...newTables[tableIndex].rows[index], [field]: value };
+      const relatedPurchase = purchases.find(p => p.buyer === buyer);
+      if (relatedPurchase) {
+        newRow.product = relatedPurchase.product;
+        newRow.species = relatedPurchase.species;
+        newRow.volume = relatedPurchase.volume;
+        newRow.amount = relatedPurchase.amount;
+      } else {
+        newRow.product = '';
+        newRow.species = '';
+        newRow.volume = 0;
+        newRow.amount = 0;
+      }
     }
+    newTables[tableId].rows[index] = newRow;
     setTables(newTables);
     debouncedSave({ tables: newTables });
   };
 
   const setDate = (tableId: number, newDate: string) => {
-    const tableIndex = tables.findIndex(t => t.date === tables[tableId].date);
+    if (!newDate) {
+      alert('Дата таблиці не може бути порожньою.');
+      return;
+    }
+
+    const isDateTaken = tables.some((table, idx) =>
+      idx !== tableId && table.date === newDate
+    );
+
+    if (isDateTaken) {
+      alert(`Таблиця на дату "${new Date(newDate).toLocaleDateString('uk-UA')}" вже існує.`);
+      return;
+    }
+
     const newTables = [...tables];
-    newTables[tableIndex].date = newDate;
+    const currentTable = newTables[tableId];
+    newTables[tableId] = { ...currentTable, date: newDate };
+
     setTables(newTables);
     debouncedSave({ tables: newTables });
   };
 
   const saveData = (data: { tableId: number; date: string; rows: Row[] }) => {
     const { tableId, date, rows } = data;
-    const tableIndex = tables.findIndex(t => t.date === tables[tableId].date);
+    if (!date) {
+      console.warn("Attempted to save table with empty date.");
+      return;
+    }
+
     const newTables = [...tables];
-    newTables[tableIndex] = { date, rows };
+    newTables[tableId] = { date, rows };
     setTables(newTables);
     debouncedSave({ tables: newTables });
   };
 
-  const deleteTable = (tableIdx: number) => {
-    if (confirm('Ви впевнені, що хочете видалити цю таблицю?')) {
-      const newTables = tables.filter((_, idx) => idx !== tableIdx);
-      setTables(newTables);
-      debouncedSave({ tables: newTables });
-    }
-  };
-
   return (
-    <>
+    <> {/* Виправлено тут: замість <>> тепер <> */}
       {tables.map((table, idx) => (
         <div key={idx} className="mb-6 border rounded p-4 sm:p-2">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0">
@@ -114,8 +121,6 @@ export default function TableList({ tables, setTables, counter, setCounter, debo
               tableId={idx}
               date={table.date}
               setDate={setDate}
-              saveData={saveData}
-              rows={table.rows}
             />
             <button
               onClick={() => deleteTable(idx)}

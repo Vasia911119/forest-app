@@ -30,18 +30,21 @@ export const exportToExcel = (tableData: { date: string; rows: Row[] }, filtered
   ];
   XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: 'A2' });
 
-  const data = filteredAndSortedRows.map(row => [
-    row.id,
+  // Змінено: замість row.id використовуємо index + 1
+  // Змінено: округлюємо volume та amount
+  const data = filteredAndSortedRows.map((row, index) => [
+    index + 1, // <--- Змінено на порядковий номер
     row.forest,
     row.buyer,
     row.product,
     row.species,
-    row.volume,
-    row.amount,
+    Math.round(row.volume), // <--- Округлюємо
+    Math.round(row.amount), // <--- Округлюємо
   ]);
   XLSX.utils.sheet_add_aoa(worksheet, data, { origin: 'A3' });
 
-  const totalRow = ['', '', '', '', 'Всього:', totalVolume, totalAmount];
+  // Змінено: округлюємо totalVolume та totalAmount
+  const totalRow = ['', '', '', '', 'Всього:', Math.round(totalVolume), Math.round(totalAmount)]; // <--- Округлюємо
   XLSX.utils.sheet_add_aoa(worksheet, [totalRow], { origin: `A${3 + filteredAndSortedRows.length}` });
 
   worksheet['!cols'] = [
@@ -71,7 +74,7 @@ export const exportToExcel = (tableData: { date: string; rows: Row[] }, filtered
     headers.forEach((_, colIdx) => {
       const cellAddress = XLSX.utils.encode_cell({ r: 2 + rowIdx, c: colIdx });
       if (!worksheet[cellAddress]) worksheet[cellAddress] = {};
-      worksheet[cellAddress].s = { ...worksheet[cellAddress].s, border: borderStyle, 
+      worksheet[cellAddress].s = { ...worksheet[cellAddress].s, border: borderStyle,
         fill: { patternType: 'solid', fgColor: { rgb: 'EFF700' } },
         alignment: { horizontal: 'center', vertical: 'center' }
       };

@@ -12,22 +12,23 @@ interface DataTableProps {
 
 const RowComponent = memo(({ row, idx }: { row: Row; idx: number }) => (
   <tr key={`${row.id}-${idx}`}>
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.id}</td>
+    {/* Змінено з {row.id} на {idx + 1} */}
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{idx + 1}</td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.forest}</td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.buyer}</td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.product}</td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.species}</td>
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.volume}</td>
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.amount}</td>
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{Math.round(row.volume)}</td>
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{Math.round(row.amount)}</td>
   </tr>
 ));
 RowComponent.displayName = 'RowComponent';
 
 export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmount, sortBy, sortOrder, handleSort }: DataTableProps) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full border text-[12px] sm:text-base text-left mb-4 sm:mb-2">
-        <thead className="bg-gray-100">
+    <div className="overflow-x-auto mb-4 sm:mb-2">
+      <table className="min-w-full border text-[12px] sm:text-base text-left">
+        <thead className="bg-gray-50">
           <tr>
             <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[40px] whitespace-normal">№</th>
             <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal">Лісництво</th>
@@ -44,14 +45,16 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
         </thead>
         <tbody>
           {filteredAndSortedRows.map((row, idx) => (
-            <RowComponent row={row} idx={idx} key={`${row.id}-${idx}`} />
+            <RowComponent key={row.id} row={row} idx={idx} />
           ))}
-          <tr className="font-bold">
-            <td className="border px-2 py-1 sm:px-1 sm:py-0.5" colSpan={5}>Всього:</td>
-            <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{totalVolume}</td>
-            <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{totalAmount}</td>
-          </tr>
         </tbody>
+        <tfoot>
+          <tr>
+            <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold" colSpan={5}>Всього:</td>
+            <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold">{Math.round(totalVolume)}</td>
+            <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold">{Math.round(totalAmount)}</td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   );
