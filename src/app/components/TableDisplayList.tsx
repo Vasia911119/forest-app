@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { exportToExcel } from '../utils/exportToExcel';
 import { Row, TableData } from '../types';
-import { forests } from '../data/forests';
 import Filters from './Filters';
 import DataTable from './DataTable';
 import ChartDisplay from './ChartDisplay';
@@ -11,9 +10,10 @@ import ExportButtons from './ExportButtons';
 
 interface TableDisplayListProps {
   tables: TableData[];
+  forests: string[];
 }
 
-export default function TableDisplayList({ tables }: TableDisplayListProps) {
+export default function TableDisplayList({ tables, forests }: TableDisplayListProps) {
   const [filters, setFilters] = useState(tables.map(() => ({ forest: '', buyer: '', species: '' })));
   const [sortBys, setSortBys] = useState<(keyof Row | null)[]>(tables.map(() => null));
   const [sortOrders, setSortOrders] = useState<('asc' | 'desc')[]>(tables.map(() => 'asc'));
@@ -107,7 +107,7 @@ export default function TableDisplayList({ tables }: TableDisplayListProps) {
         }],
       };
     });
-  }, [filteredAndSortedRowsList]);
+  }, [filteredAndSortedRowsList, forests]);
 
   const handleSort = (tableIdx: number, field: keyof Row) => {
     if (sortBys[tableIdx] === field) {
