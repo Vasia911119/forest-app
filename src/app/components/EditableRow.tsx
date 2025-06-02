@@ -1,9 +1,5 @@
 import { memo } from 'react';
 import { Row } from '../types';
-import { forests } from '../data/forests';
-import { purchases } from '../data/purchases';
-import { products } from '../data/products';
-import { species } from '../data/species';
 
 interface EditableRowProps {
   row: Row;
@@ -11,56 +7,81 @@ interface EditableRowProps {
   handleFieldChange: (index: number, field: keyof Row, value: string | number) => void;
   handleBuyerChange: (index: number, buyer: string) => void;
   deleteRow: (id: number) => void;
+  forests: string[];
+  purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[];
+  products: string[];
+  species: string[];
 }
 
-const EditableRow = memo(({ row, idx, handleFieldChange, handleBuyerChange, deleteRow }: EditableRowProps) => (
+const EditableRow = memo(({ row, idx, handleFieldChange, handleBuyerChange, deleteRow, forests, purchases, products, species }: EditableRowProps) => (
   <tr key={`${row.id}-${idx}`}>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{idx + 1}</td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
-      <select className="w-full border rounded text-sm sm:text-xs md:text-base" value={row.forest} onChange={e => handleFieldChange(idx, 'forest', e.target.value)}>
+      <select
+        className="w-full border rounded text-sm sm:text-xs md:text-base"
+        value={row.forest}
+        onChange={e => handleFieldChange(idx, 'forest', e.target.value)}
+      >
         <option value="">--</option>
-        {forests.map(f => (<option key={f} value={f}>{f}</option>))}
+        {forests.map(f => (
+          <option key={f} value={f}>{f}</option>
+        ))}
       </select>
     </td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
-      <select className="w-full border rounded text-sm sm:text-xs md:text-base" value={row.buyer} onChange={e => handleBuyerChange(idx, e.target.value)}>
+      <select
+        className="w-full border rounded text-sm sm:text-xs md:text-base"
+        value={row.buyer}
+        onChange={e => handleBuyerChange(idx, e.target.value)}
+      >
         <option value="">--</option>
-        {/* Отримуємо унікальні імена покупців з масиву purchases */}
         {purchases.map(p => p.buyer).filter((value, index, self) => self.indexOf(value) === index).map(b => (
           <option key={b} value={b}>{b}</option>
         ))}
       </select>
     </td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
-      <select className="w-full border rounded text-sm sm:text-xs md:text-base" value={row.product} onChange={e => handleFieldChange(idx, 'product', e.target.value)}>
+      <select
+        className="w-full border rounded text-sm sm:text-xs md:text-base"
+        value={row.product}
+        onChange={e => handleFieldChange(idx, 'product', e.target.value)}
+      >
         <option value="">--</option>
-        {products.map(p => (<option key={p} value={p}>{p}</option>))}
+        {products.map(p => (
+          <option key={p} value={p}>{p}</option>
+        ))}
       </select>
     </td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
-      <select className="w-full border rounded text-sm sm:text-xs md:text-base" value={row.species} onChange={e => handleFieldChange(idx, 'species', e.target.value)}>
+      <select
+        className="w-full border rounded text-sm sm:text-xs md:text-base"
+        value={row.species}
+        onChange={e => handleFieldChange(idx, 'species', e.target.value)}
+      >
         <option value="">--</option>
-        {species.map(s => (<option key={s} value={s}>{s}</option>))}
+        {species.map(s => (
+          <option key={s} value={s}>{s}</option>
+        ))}
       </select>
     </td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
       <input
         type="number"
-        value={Math.round(row.volume)} // Округлюємо для відображення
-        onChange={e => handleFieldChange(idx, 'volume', parseInt(e.target.value) || 0)} // Перетворюємо на ціле число при зміні
+        value={Math.round(row.volume)}
+        onChange={e => handleFieldChange(idx, 'volume', parseInt(e.target.value) || 0)}
         className="w-full border rounded px-2 py-1 text-sm sm:text-xs md:text-base"
         min="0"
-        step="1" // Змінюємо крок на 1, бо тепер це ціле число
+        step="1"
       />
     </td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
       <input
         type="number"
-        value={Math.round(row.amount)} // Округлюємо для відображення
-        onChange={e => handleFieldChange(idx, 'amount', parseInt(e.target.value) || 0)} // Перетворюємо на ціле число при зміні
+        value={Math.round(row.amount)}
+        onChange={e => handleFieldChange(idx, 'amount', parseInt(e.target.value) || 0)}
         className="w-full border rounded px-2 py-1 text-sm sm:text-xs md:text-base"
         min="0"
-        step="1" // Змінюємо крок на 1, бо тепер це ціле число
+        step="1"
       />
     </td>
     <td className="border px-2 py-1 text-center sm:px-1 sm:py-0.5">
