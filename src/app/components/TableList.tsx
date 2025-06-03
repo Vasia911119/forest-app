@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import DateInput from './DateInput';
 import EditableDataTable from './EditableDataTable';
 import AddRowButton from './AddRowButton';
@@ -8,62 +8,129 @@ interface TableListProps {
   tables: TableData[];
   setTables: (tables: TableData[]) => void;
   debouncedSave: (data: { tables: TableData[] }) => void;
-  deleteTable: (tableIdx: number) => void;
-  forests: string[];
+  deleteTable: (tableId: number) => void;
+  forests: (string | { name: string })[];
   setForests: (forests: string[]) => void;
-  products: string[];
+  products: (string | { name: string })[];
   setProducts: (products: string[]) => void;
-  species: string[];
+  species: (string | { name: string })[];
   setSpecies: (species: string[]) => void;
   purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[];
   setPurchases: (purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[]) => void;
 }
 
-export default function TableList({ tables, setTables, debouncedSave, deleteTable, forests, setForests, products, setProducts, species, setSpecies, purchases, setPurchases }: TableListProps) {
+export default function TableList({
+  tables,
+  setTables,
+  debouncedSave,
+  deleteTable,
+  forests,
+  setForests,
+  products,
+  setProducts,
+  species,
+  setSpecies,
+  purchases,
+  setPurchases,
+}: TableListProps) {
   const [newForest, setNewForest] = useState('');
   const [newProduct, setNewProduct] = useState('');
   const [newSpecies, setNewSpecies] = useState('');
   const [newPurchase, setNewPurchase] = useState({ buyer: '', product: '', species: '', volume: 0, amount: 0 });
   const [isManageOpen, setIsManageOpen] = useState(false);
 
-  const addRow = (tableId: number) => {
-    if (!tables[tableId].date) {
+  const createTableIfNeeded = async (tableIdx: number, newDate: string) => {
+    const currentTable = tables[tableIdx];
+    if (!currentTable.id) {
+      try {
+        const res = await fetch('/api/tables/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: newDate }),
+        });
+        if (!res.ok) throw new Error('Не вдалося створити таблицю');
+        const { id } = await res.json();
+        const newTables = [...tables];
+        newTables[tableIdx] = { ...currentTable, id, date: newDate };
+        setTables(newTables);
+        console.log('Table created with id:', id, 'Updated tables:', newTables);
+        return newTables;
+      } catch (error) {
+        console.error('Помилка створення таблиці:', error);
+        alert('Не вдалося створити таблицю.');
+        return tables;
+      }
+    }
+    return tables;
+  };
+
+  const addRow = async (tableIdx: number) => {
+    console.log('Adding row to table index:', tableIdx);
+    const currentTable = tables[tableIdx];
+    if (!currentTable.date) {
       alert('Будь ласка, спочатку введіть дату для цієї таблиці.');
       return;
     }
 
+    const newTables = await createTableIfNeeded(tableIdx, currentTable.date);
     const newRow: Row = {
-      id: Date.now(),
       forest: '',
       buyer: '',
       product: '',
       species: '',
       volume: 0,
       amount: 0,
-    };
+    }; // Не задаємо id, сервер його згенерує
+    const updatedTables = [...newTables];
+    updatedTables[tableIdx] = { ...updatedTables[tableIdx], rows: [...updatedTables[tableIdx].rows, newRow] };
+    setTables(updatedTables);
+    console.log('New row added. Updated tables:', updatedTables);
+    debouncedSave({ tables: updatedTables });
+  };
+
+  const deleteRow = async (tableIdx: number, rowId: number) => {
+    console.log('Deleting row with id:', rowId, 'from table index:', tableIdx);
+    const table = tables[tableIdx];
+    if (!table.id) {
+      alert('Таблиця не збережена в базі даних. Спочатку збережіть таблицю.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/tables', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableId: table.id, rowId }),
+      });
+      if (!res.ok) throw new Error('Не вдалося видалити рядок');
+      const newTables = [...tables];
+      newTables[tableIdx].rows = newTables[tableIdx].rows.filter(row => row.id !== rowId);
+      setTables(newTables);
+      console.log('Row deleted. Updated tables:', newTables);
+      debouncedSave({ tables: newTables });
+    } catch (error) {
+      console.error('Помилка видалення рядка:', error);
+      alert('Не вдалося видалити рядок.');
+    }
+  };
+
+  const handleFieldChange = (tableIdx: number, rowIdx: number, field: keyof Row, value: string | number) => {
+    console.log('Field change - tableIdx:', tableIdx, 'rowIdx:', rowIdx, 'field:', field, 'value:', value);
     const newTables = [...tables];
-    newTables[tableId].rows = [...newTables[tableId].rows, newRow];
+    const row = { ...newTables[tableIdx].rows[rowIdx], [field]: value };
+    // Видаляємо id, якщо він не визначений або некоректний
+    if (row.id === undefined || row.id === null) {
+      delete row.id;
+    }
+    newTables[tableIdx].rows[rowIdx] = row;
     setTables(newTables);
+    console.log('Field changed. Updated tables:', newTables);
     debouncedSave({ tables: newTables });
   };
 
-  const deleteRow = (tableId: number, id: number) => {
+  const handleBuyerChange = (tableIdx: number, rowIdx: number, buyer: string) => {
+    console.log('Buyer change - tableIdx:', tableIdx, 'rowIdx:', rowIdx, 'buyer:', buyer);
     const newTables = [...tables];
-    newTables[tableId].rows = newTables[tableId].rows.filter(row => row.id !== id);
-    setTables(newTables);
-    debouncedSave({ tables: newTables });
-  };
-
-  const handleFieldChange = (tableId: number, index: number, field: keyof Row, value: string | number) => {
-    const newTables = [...tables];
-    (newTables[tableId].rows[index][field] as string | number) = value;
-    setTables(newTables);
-    debouncedSave({ tables: newTables });
-  };
-
-  const handleBuyerChange = (tableId: number, index: number, buyer: string) => {
-    const newTables = [...tables];
-    const newRow = { ...newTables[tableId].rows[index], buyer };
+    const newRow = { ...newTables[tableIdx].rows[rowIdx], buyer };
 
     if (!buyer) {
       newRow.product = '';
@@ -84,40 +151,32 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
         newRow.amount = 0;
       }
     }
-    newTables[tableId].rows[index] = newRow;
+    newTables[tableIdx].rows[rowIdx] = newRow;
     setTables(newTables);
+    console.log('Buyer changed. Updated tables:', newTables);
     debouncedSave({ tables: newTables });
   };
 
-  const setDate = (tableId: number, newDate: string) => {
-    if (!newDate) {
-      alert('Дата таблиці не може бути порожньою.');
-      return;
-    }
-
-    const isDateTaken = tables.some((table, idx) =>
-      idx !== tableId && table.date === newDate
-    );
-
-    if (isDateTaken) {
-      alert(`Таблиця на дату "${new Date(newDate).toLocaleDateString('uk-UA')}" вже існує.`);
-      return;
-    }
-
-    const newTables = [...tables];
-    const currentTable = newTables[tableId];
-    newTables[tableId] = { ...currentTable, date: newDate };
-
-    setTables(newTables);
-    debouncedSave({ tables: newTables });
-  };
+  const setDate = useCallback(
+    async (tableIdx: number, newDate: string) => {
+      console.log('Setting date for tableIdx:', tableIdx, 'newDate:', newDate);
+      const newTables = await createTableIfNeeded(tableIdx, newDate);
+      const updatedTables = [...newTables];
+      updatedTables[tableIdx].date = newDate;
+      setTables(updatedTables);
+      console.log('Date changed. Updated tables:', updatedTables);
+      debouncedSave({ tables: updatedTables });
+    },
+    [tables, setTables, debouncedSave]
+  );
 
   const addForest = async () => {
     if (!newForest.trim()) {
       alert('Будь ласка, введіть назву лісництва.');
       return;
     }
-    if (forests.includes(newForest.trim())) {
+    const forestNames = forests.map(f => (typeof f === 'string' ? f : f.name || '')).map(f => f.trim());
+    if (forestNames.includes(newForest.trim())) {
       alert('Це лісництво вже існує.');
       return;
     }
@@ -129,8 +188,9 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
       });
       if (!res.ok) throw new Error('Не вдалося додати лісництво');
       const updatedForests = [...forests, newForest.trim()];
-      setForests(updatedForests);
+      setForests(updatedForests.map(f => (typeof f === 'string' ? f : f.name || '')).map(f => f.trim()));
       setNewForest('');
+      console.log('Forest added. Updated forests:', updatedForests);
     } catch (error) {
       console.error('Помилка додавання лісництва:', error);
       alert('Не вдалося додати лісництво.');
@@ -138,9 +198,7 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
   };
 
   const deleteForest = async (forest: string) => {
-    const isUsed = tables.some(table =>
-      table.rows.some(row => row.forest === forest)
-    );
+    const isUsed = tables.some(table => table.rows.some(row => row.forest === forest));
     if (isUsed) {
       alert('Це лісництво використовується в таблиці. Видаліть відповідні рядки перед видаленням.');
       return;
@@ -153,8 +211,11 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
           body: JSON.stringify({ name: forest }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити лісництво');
-        const updatedForests = forests.filter(f => f !== forest);
+        const updatedForests = forests
+          .map(f => (typeof f === 'string' ? f : f.name || ''))
+          .filter(f => f !== forest);
         setForests(updatedForests);
+        console.log('Forest deleted. Updated forests:', updatedForests);
       } catch (error) {
         console.error('Помилка видалення лісництва:', error);
         alert('Не вдалося видалити лісництво.');
@@ -164,10 +225,11 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
 
   const addProduct = async () => {
     if (!newProduct.trim()) {
-      alert('Будь ласка, введіть найменування продукції.');
+      alert('Будь ласка, введіть назву продукції.');
       return;
     }
-    if (products.includes(newProduct.trim())) {
+    const productNames = products.map(p => (typeof p === 'string' ? p : p.name || '')).map(p => p.trim());
+    if (productNames.includes(newProduct.trim())) {
       alert('Ця продукція вже існує.');
       return;
     }
@@ -179,8 +241,9 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
       });
       if (!res.ok) throw new Error('Не вдалося додати продукцію');
       const updatedProducts = [...products, newProduct.trim()];
-      setProducts(updatedProducts);
+      setProducts(updatedProducts.map(p => (typeof p === 'string' ? p : p.name || '')).map(p => p.trim()));
       setNewProduct('');
+      console.log('Product added. Updated products:', updatedProducts);
     } catch (error) {
       console.error('Помилка додавання продукції:', error);
       alert('Не вдалося додати продукцію.');
@@ -188,9 +251,9 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
   };
 
   const deleteProduct = async (product: string) => {
-    const isUsed = tables.some(table =>
-      table.rows.some(row => row.product === product)
-    ) || purchases.some(purchase => purchase.product === product);
+    const isUsed =
+      tables.some(table => table.rows.some(row => row.product === product)) ||
+      purchases.some(purchase => purchase.product === product);
     if (isUsed) {
       alert('Ця продукція використовується в таблиці або в інформації про покупку. Видаліть відповідні записи перед видаленням.');
       return;
@@ -203,8 +266,11 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
           body: JSON.stringify({ name: product }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити продукцію');
-        const updatedProducts = products.filter(p => p !== product);
+        const updatedProducts = products
+          .map(p => (typeof p === 'string' ? p : p.name || ''))
+          .filter(p => p !== product);
         setProducts(updatedProducts);
+        console.log('Product deleted. Updated products:', updatedProducts);
       } catch (error) {
         console.error('Помилка видалення продукції:', error);
         alert('Не вдалося видалити продукцію.');
@@ -217,7 +283,8 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
       alert('Будь ласка, введіть породу.');
       return;
     }
-    if (species.includes(newSpecies.trim())) {
+    const speciesNames = species.map(s => (typeof s === 'string' ? s : s.name || '')).map(s => s.trim());
+    if (speciesNames.includes(newSpecies.trim())) {
       alert('Ця порода вже існує.');
       return;
     }
@@ -229,8 +296,9 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
       });
       if (!res.ok) throw new Error('Не вдалося додати породу');
       const updatedSpecies = [...species, newSpecies.trim()];
-      setSpecies(updatedSpecies);
+      setSpecies(updatedSpecies.map(s => (typeof s === 'string' ? s : s.name || '')).map(s => s.trim()));
       setNewSpecies('');
+      console.log('Species added. Updated species:', updatedSpecies);
     } catch (error) {
       console.error('Помилка додавання породи:', error);
       alert('Не вдалося додати породу.');
@@ -238,9 +306,9 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
   };
 
   const deleteSpecies = async (specie: string) => {
-    const isUsed = tables.some(table =>
-      table.rows.some(row => row.species === specie)
-    ) || purchases.some(purchase => purchase.species === specie);
+    const isUsed =
+      tables.some(table => table.rows.some(row => row.species === specie)) ||
+      purchases.some(purchase => purchase.species === specie);
     if (isUsed) {
       alert('Ця порода використовується в таблиці або в інформації про покупку. Видаліть відповідні записи перед видаленням.');
       return;
@@ -253,8 +321,11 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
           body: JSON.stringify({ name: specie }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити породу');
-        const updatedSpecies = species.filter(s => s !== specie);
+        const updatedSpecies = species
+          .map(s => (typeof s === 'string' ? s : s.name || ''))
+          .filter(s => s !== specie);
         setSpecies(updatedSpecies);
+        console.log('Species deleted. Updated species:', updatedSpecies);
       } catch (error) {
         console.error('Помилка видалення породи:', error);
         alert('Не вдалося видалити породу.');
@@ -284,15 +355,10 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
         }),
       });
       if (!res.ok) throw new Error('Не вдалося додати інформацію про покупку');
-      const updatedPurchases = [...purchases, {
-        buyer: newPurchase.buyer.trim(),
-        product: newPurchase.product.trim(),
-        species: newPurchase.species.trim(),
-        volume: newPurchase.volume,
-        amount: newPurchase.amount,
-      }];
+      const updatedPurchases = [...purchases, { ...newPurchase }];
       setPurchases(updatedPurchases);
       setNewPurchase({ buyer: '', product: '', species: '', volume: 0, amount: 0 });
+      console.log('Purchase added. Updated purchases:', updatedPurchases);
     } catch (error) {
       console.error('Помилка додавання інформації про покупку:', error);
       alert('Не вдалося додати інформацію про покупку.');
@@ -300,9 +366,7 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
   };
 
   const deletePurchase = async (purchase: { buyer: string; product: string; species: string; volume: number; amount: number }) => {
-    const isUsed = tables.some(table =>
-      table.rows.some(row => row.buyer === purchase.buyer)
-    );
+    const isUsed = tables.some(table => table.rows.some(row => row.buyer === purchase.buyer));
     if (isUsed) {
       alert('Цей покупець використовується в таблиці. Видаліть відповідні рядки перед видаленням.');
       return;
@@ -319,10 +383,11 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
           }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити інформацію про покупку');
-        const updatedPurchases = purchases.filter(p =>
-          !(p.buyer === purchase.buyer && p.product === purchase.product && p.species === purchase.species)
+        const updatedPurchases = purchases.filter(
+          p => !(p.buyer === purchase.buyer && p.product === purchase.product && p.species === purchase.species)
         );
         setPurchases(updatedPurchases);
+        console.log('Purchase deleted. Updated purchases:', updatedPurchases);
       } catch (error) {
         console.error('Помилка видалення інформації про покупку:', error);
         alert('Не вдалося видалити інформацію про покупку.');
@@ -330,22 +395,24 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
     }
   };
 
+  const mappedForests = forests.map(f => (typeof f === 'string' ? f.trim() : f.name?.trim() || '')).filter(f => f);
+  const mappedProducts = products.map(p => (typeof p === 'string' ? p.trim() : p.name?.trim() || '')).filter(p => p);
+  const mappedSpecies = species.map(s => (typeof s === 'string' ? s.trim() : s.name?.trim() || '')).filter(s => s);
+
   return (
     <>
       {tables.map((table, idx) => (
         <div key={idx} className="mb-6 border rounded p-4 sm:p-2">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0">
-            <DateInput
-              tableId={idx}
-              date={table.date}
-              setDate={setDate}
-            />
-            <button
-              onClick={() => deleteTable(idx)}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 sm:px-3 sm:py-1 sm:text-sm md:text-base cursor-pointer"
-            >
-              Видалити таблицю
-            </button>
+            <DateInput tableId={idx} date={table.date} setDate={setDate} />
+            {table.id && (
+              <button
+                onClick={() => deleteTable(table.id)}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 sm:px-3 sm:py-1 sm:text-sm md:text-base cursor-pointer"
+              >
+                Видалити таблицю
+              </button>
+            )}
           </div>
           <EditableDataTable
             tableId={idx}
@@ -353,10 +420,10 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
             handleFieldChange={handleFieldChange}
             handleBuyerChange={handleBuyerChange}
             deleteRow={deleteRow}
-            forests={forests}
+            forests={mappedForests}
             purchases={purchases}
-            products={products}
-            species={species}
+            products={mappedProducts}
+            species={mappedSpecies}
           />
           <AddRowButton tableId={idx} addRow={addRow} />
         </div>
@@ -391,16 +458,27 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
                   </button>
                 </div>
                 <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {forests.map(forest => (
-                    <li key={forest} className="flex justify-between items-center py-1">
+                  {mappedForests.map((forest, idx) => (
+                    <li key={`${forest}-${idx}`} className="flex justify-between items-center py-1">
                       <span>{forest}</span>
                       <button
                         onClick={() => deleteForest(forest)}
                         className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
                         title="Видалити лісництво"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6 text-red-600 hover:text-red-800"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"
+                          />
                         </svg>
                       </button>
                     </li>
@@ -426,16 +504,27 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
                   </button>
                 </div>
                 <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {products.map(product => (
-                    <li key={product} className="flex justify-between items-center py-1">
+                  {mappedProducts.map((product, idx) => (
+                    <li key={`${product}-${idx}`} className="flex justify-between items-center py-1">
                       <span>{product}</span>
                       <button
                         onClick={() => deleteProduct(product)}
                         className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
                         title="Видалити продукцію"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6 text-red-600 hover:text-red-800"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"
+                          />
                         </svg>
                       </button>
                     </li>
@@ -461,16 +550,27 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
                   </button>
                 </div>
                 <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {species.map(specie => (
-                    <li key={specie} className="flex justify-between items-center py-1">
+                  {mappedSpecies.map((specie, idx) => (
+                    <li key={`${specie}-${idx}`} className="flex justify-between items-center py-1">
                       <span>{specie}</span>
                       <button
                         onClick={() => deleteSpecies(specie)}
                         className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
                         title="Видалити породу"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6 text-red-600 hover:text-red-800"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"
+                          />
                         </svg>
                       </button>
                     </li>
@@ -529,15 +629,26 @@ export default function TableList({ tables, setTables, debouncedSave, deleteTabl
                 </div>
                 <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
                   {purchases.map((purchase, idx) => (
-                    <li key={idx} className="flex justify-between items-center py-1">
+                    <li key={`${purchase.buyer}-${idx}`} className="flex justify-between items-center py-1">
                       <span>{`${purchase.buyer} - ${purchase.product} - ${purchase.species} (${purchase.volume} м³, ${purchase.amount} грн)`}</span>
                       <button
                         onClick={() => deletePurchase(purchase)}
                         className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
                         title="Видалити інформацію про покупку"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6 text-red-600 hover:text-red-800"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"
+                          />
                         </svg>
                       </button>
                     </li>

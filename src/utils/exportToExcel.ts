@@ -1,6 +1,6 @@
 import * as XLSX from 'sheetjs-style';
 import { saveAs } from 'file-saver';
-import { Row } from '../types';
+import { Row } from '../app/types';
 
 export const exportToExcel = (tableData: { date: string; rows: Row[] }, filteredAndSortedRows: Row[], totalVolume: number, totalAmount: number) => {
   const workbook = XLSX.utils.book_new();

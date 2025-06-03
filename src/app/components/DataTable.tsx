@@ -10,18 +10,7 @@ interface DataTableProps {
   handleSort: (field: keyof Row) => void;
 }
 
-const RowComponent = memo(({ row, idx }: { row: Row; idx: number }) => (
-  <tr key={`${row.id}-${idx}`}>
-    {/* Змінено з {row.id} на {idx + 1} */}
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{idx + 1}</td>
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.forest}</td>
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.buyer}</td>
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.product}</td>
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.species}</td>
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{Math.round(row.volume)}</td>
-    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{Math.round(row.amount)}</td>
-  </tr>
-));
+const RowComponent = memo(({ row, idx }: { row: Row; idx: number }) => (<tr key={`${row.id}-${idx}`}><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{idx + 1}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.forest}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.buyer}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.product}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.species}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{Math.round(row.volume)}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{Math.round(row.amount)}</td></tr>));
 RowComponent.displayName = 'RowComponent';
 
 export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmount, sortBy, sortOrder, handleSort }: DataTableProps) {
@@ -45,7 +34,7 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
         </thead>
         <tbody>
           {filteredAndSortedRows.map((row, idx) => (
-            <RowComponent key={row.id} row={row} idx={idx} />
+            <RowComponent key={`${row.id}-${idx}`} row={row} idx={idx} />
           ))}
         </tbody>
         <tfoot>

@@ -1,48 +1,20 @@
-// import { NextApiRequest, NextApiResponse } from 'next';
-// import { sql } from '@vercel/postgres';
-
-// export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-//   try {
-//     if (req.method === 'GET') {
-//       const result = await sql`SELECT name FROM forests ORDER BY name;`;
-//       return res.status(200).json(result.rows.map(row => row.name));
-//     }
-
-//     if (req.method === 'POST') {
-//       const { name } = req.body;
-//       if (!name || typeof name !== 'string') {
-//         return res.status(400).json({ error: 'Назва лісництва є обов’язковою і має бути текстом.' });
-//       }
-//       await sql`INSERT INTO forests (name) VALUES (${name}) ON CONFLICT (name) DO NOTHING;`;
-//       return res.status(201).json({ message: 'Лісництво додано.' });
-//     }
-
-//     if (req.method === 'DELETE') {
-//       const { name } = req.body;
-//       if (!name || typeof name !== 'string') {
-//         return res.status(400).json({ error: 'Назва лісництва є обов’язковою.' });
-//       }
-//       const result = await sql`DELETE FROM forests WHERE name = ${name};`;
-//       if (result.rowCount === 0) {
-//         return res.status(404).json({ error: 'Лісництво не знайдено.' });
-//       }
-//       return res.status(200).json({ message: 'Лісництво видалено.' });
-//     }
-
-//     return res.status(405).json({ error: 'Метод не підтримується.' });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ error: 'Помилка сервера.' });
-//   }
-// }
-import { sql } from '@vercel/postgres';
+import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const result = await sql`SELECT name FROM forests`;
-    const forests: string[] = result.rows.map(row => row.name);
-    return NextResponse.json(forests);
+    console.log('Initializing Supabase client for forests...');
+    const supabase = await createClient();
+    console.log('Fetching forests from Supabase...');
+    const { data, error } = await supabase.from('forests').select('name');
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+
+    console.log('Data fetched:', data);
+    return NextResponse.json(data.map(item => item.name)); // Повертаємо масив рядків
   } catch (error) {
     console.error('Помилка завантаження лісництв:', error);
     return NextResponse.json({ error: 'Не вдалося завантажити лісництва' }, { status: 500 });
@@ -51,11 +23,44 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { forest } = await request.json();
-    await sql`INSERT INTO forests (name) VALUES (${forest}) ON CONFLICT (name) DO NOTHING`;
-    return NextResponse.json({ success: true });
+    const { name } = await request.json();
+    if (!name || typeof name !== 'string') {
+      return NextResponse.json({ error: 'Неправильне ім’я лісництва' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.from('forests').insert({ name });
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+
+    return NextResponse.json({ message: 'Лісництво додано' }, { status: 201 });
   } catch (error) {
-    console.error('Помилка збереження лісництва:', error);
-    return NextResponse.json({ error: 'Не вдалося зберегти лісництво' }, { status: 500 });
+    console.error('Помилка додавання лісництва:', error);
+    return NextResponse.json({ error: 'Не вдалося додати лісництво' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { name } = await request.json();
+    if (!name || typeof name !== 'string') {
+      return NextResponse.json({ error: 'Неправильне ім’я лісництва' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.from('forests').delete().eq('name', name);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+
+    return NextResponse.json({ message: 'Лісництво видалено' }, { status: 200 });
+  } catch (error) {
+    console.error('Помилка видалення лісництва:', error);
+    return NextResponse.json({ error: 'Не вдалося видалити лісництво' }, { status: 500 });
   }
 }

@@ -7,10 +7,10 @@ interface EditableDataTableProps {
   handleFieldChange: (tableId: number, index: number, field: keyof Row, value: string | number) => void;
   handleBuyerChange: (tableId: number, index: number, buyer: string) => void;
   deleteRow: (tableId: number, id: number) => void;
-  forests: string[];
+  forests: (string | { name: string })[]; // Додано тип для гнучкості
   purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[];
-  products: string[];
-  species: string[];
+  products: (string | { name: string })[]; // Додано тип для гнучкості
+  species: (string | { name: string })[]; // Додано тип для гнучкості
 }
 
 export default function EditableDataTable({ tableId, rows, handleFieldChange, handleBuyerChange, deleteRow, forests, purchases, products, species }: EditableDataTableProps) {
@@ -38,10 +38,10 @@ export default function EditableDataTable({ tableId, rows, handleFieldChange, ha
               handleFieldChange={(index, field, value) => handleFieldChange(tableId, index, field, value)}
               handleBuyerChange={(index, buyer) => handleBuyerChange(tableId, index, buyer)}
               deleteRow={() => deleteRow(tableId, row.id)}
-              forests={forests}
+              forests={forests.map(f => (typeof f === 'string' ? f : f.name || ''))} // Коректний синтаксис
               purchases={purchases}
-              products={products}
-              species={species}
+              products={products.map(p => (typeof p === 'string' ? p : p.name || ''))} // Коректний синтаксис
+              species={species.map(s => (typeof s === 'string' ? s : s.name || ''))} // Коректний синтаксис
             />
           ))}
         </tbody>

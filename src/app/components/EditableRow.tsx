@@ -35,9 +35,12 @@ const EditableRow = memo(({ row, idx, handleFieldChange, handleBuyerChange, dele
         onChange={e => handleBuyerChange(idx, e.target.value)}
       >
         <option value="">--</option>
-        {purchases.map(p => p.buyer).filter((value, index, self) => self.indexOf(value) === index).map(b => (
-          <option key={b} value={b}>{b}</option>
-        ))}
+        {purchases
+          .map(p => p.buyer)
+          .filter((value, index, self) => self.indexOf(value) === index)
+          .map(buyer => (
+            <option key={buyer} value={buyer}>{buyer}</option>
+          ))}
       </select>
     </td>
     <td className="border px-2 py-1 sm:px-1 sm:py-0.5">

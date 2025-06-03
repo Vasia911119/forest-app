@@ -9,6 +9,7 @@ export interface Row {
 }
 
 export interface TableData {
+  id: number;
   date: string;
-  rows: Row[];
+  rows: Row[]; // Масив рядків, отриманий із таблиці rows
 }

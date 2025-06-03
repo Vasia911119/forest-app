@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { exportToExcel } from '../utils/exportToExcel';
+import { exportToExcel } from '../../utils/exportToExcel';
 import { Row, TableData } from '../types';
 import Filters from './Filters';
 import DataTable from './DataTable';
@@ -52,7 +52,8 @@ export default function TableDisplayList({ tables, forests }: TableDisplayListPr
   };
 
   const filteredAndSortedRowsList = useMemo(() => {
-    return tables.map((table, tableIdx) => {
+    const tablesArray = Array.isArray(tables) ? tables : [];
+    return tablesArray.map((table, tableIdx) => {
       if (!table.rows || !Array.isArray(table.rows)) {
         return [];
       }
@@ -122,9 +123,11 @@ export default function TableDisplayList({ tables, forests }: TableDisplayListPr
     exportToExcel(tables[tableIdx], filteredAndSortedRowsList[tableIdx], totalsList[tableIdx].totalVolume, totalsList[tableIdx].totalAmount);
   };
 
+  const tablesArray = Array.isArray(tables) ? tables : [];
+
   return (
     <>
-      {tables.map((table, idx) => (
+      {tablesArray.map((table, idx) => (
         <div key={idx} className="mb-6 border rounded p-4 sm:p-2">
           {table.date && (
             <h2 className="text-xl sm:text-lg md:text-2xl font-bold mb-4 sm:mb-2">
