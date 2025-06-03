@@ -19,32 +19,27 @@ export default function TableEditor() {
         const tablesRes = await fetch('/api/tables');
         if (!tablesRes.ok) throw new Error('Не вдалося завантажити таблиці');
         const tablesData = await tablesRes.json();
-        setTables(tablesData || []);
-        console.log('Loaded tables:', tablesData);
+        setTables(tablesData);
 
         const forestsRes = await fetch('/api/forests');
         if (!forestsRes.ok) throw new Error('Не вдалося завантажити лісництва');
         const forestsData = await forestsRes.json();
         setForests(forestsData);
-        console.log('Loaded forests:', forestsData);
 
         const productsRes = await fetch('/api/products');
         if (!productsRes.ok) throw new Error('Не вдалося завантажити продукцію');
         const productsData = await productsRes.json();
         setProducts(productsData);
-        console.log('Loaded products:', productsData);
 
         const speciesRes = await fetch('/api/species');
         if (!speciesRes.ok) throw new Error('Не вдалося завантажити породи');
         const speciesData = await speciesRes.json();
         setSpecies(speciesData);
-        console.log('Loaded species:', speciesData);
 
         const purchasesRes = await fetch('/api/purchases');
         if (!purchasesRes.ok) throw new Error('Не вдалося завантажити покупки');
         const purchasesData = await purchasesRes.json();
         setPurchases(purchasesData);
-        console.log('Loaded purchases:', purchasesData);
       } catch (error) {
         console.error('Помилка завантаження даних:', error);
         alert('Не вдалося завантажити дані.');
@@ -69,10 +64,6 @@ export default function TableEditor() {
           })
           .then(result => {
             console.log('API response:', result);
-            if (result.updatedTables) {
-              console.log('Updating tables with new IDs:', result.updatedTables);
-              setTables(result.updatedTables);
-            }
           })
           .catch(error => {
             console.error('Помилка збереження:', error);
@@ -96,7 +87,6 @@ export default function TableEditor() {
       rows: [],
     };
     setTables(prev => [...prev, newTable]);
-    console.log('New table added:', newTable);
   }, [tables]);
 
   const deleteTable = useCallback(
@@ -113,7 +103,6 @@ export default function TableEditor() {
         if (!res.ok) throw new Error('Не вдалося видалити таблицю');
         const newTables = tables.filter(table => table.id !== tableId);
         setTables(newTables);
-        console.log('Table deleted. Updated tables:', newTables);
       } catch (error) {
         console.error('Помилка видалення таблиці:', error);
         alert('Не вдалося видалити таблицю.');

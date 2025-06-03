@@ -14,13 +14,11 @@ export default function TableView() {
         const tablesRes = await fetch('/api/tables');
         if (!tablesRes.ok) throw new Error('Не вдалося завантажити таблиці');
         const tablesData = await tablesRes.json();
-        console.log('Tables data:', tablesData); // Додай лог
-        setTables(tablesData || []);
+        setTables(tablesData);
 
         const forestsRes = await fetch('/api/forests');
         if (!forestsRes.ok) throw new Error('Не вдалося завантажити лісництва');
         const forestsData = await forestsRes.json();
-        console.log('Forests data:', forestsData); // Додай лог
         setForests(forestsData);
       } catch (error) {
         console.error('Помилка завантаження даних:', error);
@@ -31,15 +29,12 @@ export default function TableView() {
     loadData();
   }, []);
 
-  console.log('Current tables:', tables); // Додай лог
-  console.log('Current forests:', forests); // Додай лог
-
   return (
     <div className="p-4 sm:p-2">
       {tables.length === 0 ? (
         <p className="text-center text-gray-500 text-base sm:text-sm md:text-lg">Немає доступних таблиць для відображення.</p>
       ) : (
-        <TableDisplayList tables={Array.isArray(tables) ? tables : tables.tables || []} forests={forests} />
+        <TableDisplayList tables={tables} forests={forests} />
       )}
     </div>
   );

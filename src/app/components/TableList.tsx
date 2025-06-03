@@ -39,73 +39,65 @@ export default function TableList({
   const [newPurchase, setNewPurchase] = useState({ buyer: '', product: '', species: '', volume: 0, amount: 0 });
   const [isManageOpen, setIsManageOpen] = useState(false);
 
-  const createTableIfNeeded = async (tableIdx: number, newDate: string) => {
-    const currentTable = tables[tableIdx];
+  const addRow = async (tableIdx: number) => {
+    if (!tables[tableIdx].date) {
+      alert('Будь ласка, спочатку введіть дату для цієї таблиці.');
+      return;
+    }
+
+    let currentTable = tables[tableIdx];
     if (!currentTable.id) {
       try {
         const res = await fetch('/api/tables/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date: newDate }),
+          body: JSON.stringify({ date: currentTable.date }),
         });
         if (!res.ok) throw new Error('Не вдалося створити таблицю');
         const { id } = await res.json();
+        currentTable = { ...currentTable, id };
         const newTables = [...tables];
-        newTables[tableIdx] = { ...currentTable, id, date: newDate };
+        newTables[tableIdx] = currentTable;
         setTables(newTables);
-        console.log('Table created with id:', id, 'Updated tables:', newTables);
-        return newTables;
       } catch (error) {
         console.error('Помилка створення таблиці:', error);
         alert('Не вдалося створити таблицю.');
-        return tables;
+        return;
       }
     }
-    return tables;
-  };
 
-  const addRow = async (tableIdx: number) => {
-    console.log('Adding row to table index:', tableIdx);
-    const currentTable = tables[tableIdx];
-    if (!currentTable.date) {
-      alert('Будь ласка, спочатку введіть дату для цієї таблиці.');
-      return;
-    }
-
-    const newTables = await createTableIfNeeded(tableIdx, currentTable.date);
     const newRow: Row = {
+      id: undefined,
       forest: '',
       buyer: '',
       product: '',
       species: '',
       volume: 0,
       amount: 0,
-    }; // Не задаємо id, сервер його згенерує
-    const updatedTables = [...newTables];
-    updatedTables[tableIdx] = { ...updatedTables[tableIdx], rows: [...updatedTables[tableIdx].rows, newRow] };
-    setTables(updatedTables);
-    console.log('New row added. Updated tables:', updatedTables);
-    debouncedSave({ tables: updatedTables });
+    };
+    const newTables = [...tables];
+    newTables[tableIdx] = { ...currentTable, rows: [...currentTable.rows, newRow] };
+    setTables(newTables);
+    debouncedSave({ tables: newTables });
   };
 
   const deleteRow = async (tableIdx: number, rowId: number) => {
-    console.log('Deleting row with id:', rowId, 'from table index:', tableIdx);
-    const table = tables[tableIdx];
-    if (!table.id) {
-      alert('Таблиця не збережена в базі даних. Спочатку збережіть таблицю.');
-      return;
-    }
     try {
+      const table = tables[tableIdx];
+      if (!table.id) {
+        alert('Таблиця не збережена в базі даних. Спочатку збережіть таблицю.');
+        return;
+      }
       const res = await fetch('/api/tables', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableId: table.id, rowId }),
       });
       if (!res.ok) throw new Error('Не вдалося видалити рядок');
+
       const newTables = [...tables];
       newTables[tableIdx].rows = newTables[tableIdx].rows.filter(row => row.id !== rowId);
       setTables(newTables);
-      console.log('Row deleted. Updated tables:', newTables);
       debouncedSave({ tables: newTables });
     } catch (error) {
       console.error('Помилка видалення рядка:', error);
@@ -114,21 +106,13 @@ export default function TableList({
   };
 
   const handleFieldChange = (tableIdx: number, rowIdx: number, field: keyof Row, value: string | number) => {
-    console.log('Field change - tableIdx:', tableIdx, 'rowIdx:', rowIdx, 'field:', field, 'value:', value);
     const newTables = [...tables];
-    const row = { ...newTables[tableIdx].rows[rowIdx], [field]: value };
-    // Видаляємо id, якщо він не визначений або некоректний
-    if (row.id === undefined || row.id === null) {
-      delete row.id;
-    }
-    newTables[tableIdx].rows[rowIdx] = row;
+    (newTables[tableIdx].rows[rowIdx][field] as string | number) = value;
     setTables(newTables);
-    console.log('Field changed. Updated tables:', newTables);
     debouncedSave({ tables: newTables });
   };
 
   const handleBuyerChange = (tableIdx: number, rowIdx: number, buyer: string) => {
-    console.log('Buyer change - tableIdx:', tableIdx, 'rowIdx:', rowIdx, 'buyer:', buyer);
     const newTables = [...tables];
     const newRow = { ...newTables[tableIdx].rows[rowIdx], buyer };
 
@@ -153,19 +137,40 @@ export default function TableList({
     }
     newTables[tableIdx].rows[rowIdx] = newRow;
     setTables(newTables);
-    console.log('Buyer changed. Updated tables:', newTables);
     debouncedSave({ tables: newTables });
   };
 
   const setDate = useCallback(
-    async (tableIdx: number, newDate: string) => {
-      console.log('Setting date for tableIdx:', tableIdx, 'newDate:', newDate);
-      const newTables = await createTableIfNeeded(tableIdx, newDate);
-      const updatedTables = [...newTables];
-      updatedTables[tableIdx].date = newDate;
-      setTables(updatedTables);
-      console.log('Date changed. Updated tables:', updatedTables);
-      debouncedSave({ tables: updatedTables });
+    (tableIdx: number, newDate: string) => {
+      const newTables = [...tables];
+      let currentTable = newTables[tableIdx];
+
+      if (!currentTable.id) {
+        fetch('/api/tables/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: newDate }),
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('Не вдалося створити таблицю');
+            return res.json();
+          })
+          .then(({ id }) => {
+            currentTable = { ...currentTable, id, date: newDate };
+            newTables[tableIdx] = currentTable;
+            setTables(newTables);
+            debouncedSave({ tables: newTables });
+          })
+          .catch(error => {
+            console.error('Помилка створення таблиці:', error);
+            alert('Не вдалося створити таблицю.');
+          });
+      } else {
+        currentTable.date = newDate;
+        newTables[tableIdx] = currentTable;
+        setTables(newTables);
+        debouncedSave({ tables: newTables });
+      }
     },
     [tables, setTables, debouncedSave]
   );
@@ -175,8 +180,7 @@ export default function TableList({
       alert('Будь ласка, введіть назву лісництва.');
       return;
     }
-    const forestNames = forests.map(f => (typeof f === 'string' ? f : f.name || '')).map(f => f.trim());
-    if (forestNames.includes(newForest.trim())) {
+    if (forests.map(f => (typeof f === 'string' ? f : f.name || '')).includes(newForest.trim())) {
       alert('Це лісництво вже існує.');
       return;
     }
@@ -188,9 +192,8 @@ export default function TableList({
       });
       if (!res.ok) throw new Error('Не вдалося додати лісництво');
       const updatedForests = [...forests, newForest.trim()];
-      setForests(updatedForests.map(f => (typeof f === 'string' ? f : f.name || '')).map(f => f.trim()));
+      setForests(updatedForests.map(f => (typeof f === 'string' ? f : f.name || '')));
       setNewForest('');
-      console.log('Forest added. Updated forests:', updatedForests);
     } catch (error) {
       console.error('Помилка додавання лісництва:', error);
       alert('Не вдалося додати лісництво.');
@@ -211,11 +214,8 @@ export default function TableList({
           body: JSON.stringify({ name: forest }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити лісництво');
-        const updatedForests = forests
-          .map(f => (typeof f === 'string' ? f : f.name || ''))
-          .filter(f => f !== forest);
+        const updatedForests = forests.map(f => (typeof f === 'string' ? f : f.name || '')).filter(f => f !== forest);
         setForests(updatedForests);
-        console.log('Forest deleted. Updated forests:', updatedForests);
       } catch (error) {
         console.error('Помилка видалення лісництва:', error);
         alert('Не вдалося видалити лісництво.');
@@ -228,8 +228,7 @@ export default function TableList({
       alert('Будь ласка, введіть назву продукції.');
       return;
     }
-    const productNames = products.map(p => (typeof p === 'string' ? p : p.name || '')).map(p => p.trim());
-    if (productNames.includes(newProduct.trim())) {
+    if (products.map(p => (typeof p === 'string' ? p : p.name || '')).includes(newProduct.trim())) {
       alert('Ця продукція вже існує.');
       return;
     }
@@ -241,9 +240,8 @@ export default function TableList({
       });
       if (!res.ok) throw new Error('Не вдалося додати продукцію');
       const updatedProducts = [...products, newProduct.trim()];
-      setProducts(updatedProducts.map(p => (typeof p === 'string' ? p : p.name || '')).map(p => p.trim()));
+      setProducts(updatedProducts.map(p => (typeof p === 'string' ? p : p.name || '')));
       setNewProduct('');
-      console.log('Product added. Updated products:', updatedProducts);
     } catch (error) {
       console.error('Помилка додавання продукції:', error);
       alert('Не вдалося додати продукцію.');
@@ -266,11 +264,8 @@ export default function TableList({
           body: JSON.stringify({ name: product }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити продукцію');
-        const updatedProducts = products
-          .map(p => (typeof p === 'string' ? p : p.name || ''))
-          .filter(p => p !== product);
+        const updatedProducts = products.map(p => (typeof p === 'string' ? p : p.name || '')).filter(p => p !== product);
         setProducts(updatedProducts);
-        console.log('Product deleted. Updated products:', updatedProducts);
       } catch (error) {
         console.error('Помилка видалення продукції:', error);
         alert('Не вдалося видалити продукцію.');
@@ -283,8 +278,7 @@ export default function TableList({
       alert('Будь ласка, введіть породу.');
       return;
     }
-    const speciesNames = species.map(s => (typeof s === 'string' ? s : s.name || '')).map(s => s.trim());
-    if (speciesNames.includes(newSpecies.trim())) {
+    if (species.map(s => (typeof s === 'string' ? s : s.name || '')).includes(newSpecies.trim())) {
       alert('Ця порода вже існує.');
       return;
     }
@@ -296,9 +290,8 @@ export default function TableList({
       });
       if (!res.ok) throw new Error('Не вдалося додати породу');
       const updatedSpecies = [...species, newSpecies.trim()];
-      setSpecies(updatedSpecies.map(s => (typeof s === 'string' ? s : s.name || '')).map(s => s.trim()));
+      setSpecies(updatedSpecies.map(s => (typeof s === 'string' ? s : s.name || '')));
       setNewSpecies('');
-      console.log('Species added. Updated species:', updatedSpecies);
     } catch (error) {
       console.error('Помилка додавання породи:', error);
       alert('Не вдалося додати породу.');
@@ -321,11 +314,8 @@ export default function TableList({
           body: JSON.stringify({ name: specie }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити породу');
-        const updatedSpecies = species
-          .map(s => (typeof s === 'string' ? s : s.name || ''))
-          .filter(s => s !== specie);
+        const updatedSpecies = species.map(s => (typeof s === 'string' ? s : s.name || '')).filter(s => s !== specie);
         setSpecies(updatedSpecies);
-        console.log('Species deleted. Updated species:', updatedSpecies);
       } catch (error) {
         console.error('Помилка видалення породи:', error);
         alert('Не вдалося видалити породу.');
@@ -358,7 +348,6 @@ export default function TableList({
       const updatedPurchases = [...purchases, { ...newPurchase }];
       setPurchases(updatedPurchases);
       setNewPurchase({ buyer: '', product: '', species: '', volume: 0, amount: 0 });
-      console.log('Purchase added. Updated purchases:', updatedPurchases);
     } catch (error) {
       console.error('Помилка додавання інформації про покупку:', error);
       alert('Не вдалося додати інформацію про покупку.');
@@ -383,11 +372,10 @@ export default function TableList({
           }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити інформацію про покупку');
-        const updatedPurchases = purchases.filter(
-          p => !(p.buyer === purchase.buyer && p.product === purchase.product && p.species === purchase.species)
+        const updatedPurchases = purchases.filter(p =>
+          !(p.buyer === purchase.buyer && p.product === purchase.product && p.species === purchase.species)
         );
         setPurchases(updatedPurchases);
-        console.log('Purchase deleted. Updated purchases:', updatedPurchases);
       } catch (error) {
         console.error('Помилка видалення інформації про покупку:', error);
         alert('Не вдалося видалити інформацію про покупку.');
@@ -395,9 +383,9 @@ export default function TableList({
     }
   };
 
-  const mappedForests = forests.map(f => (typeof f === 'string' ? f.trim() : f.name?.trim() || '')).filter(f => f);
-  const mappedProducts = products.map(p => (typeof p === 'string' ? p.trim() : p.name?.trim() || '')).filter(p => p);
-  const mappedSpecies = species.map(s => (typeof s === 'string' ? s.trim() : s.name?.trim() || '')).filter(s => s);
+  const mappedForests = forests.map(f => (typeof f === 'string' ? f : f.name || ''));
+  const mappedProducts = products.map(p => (typeof p === 'string' ? p : p.name || ''));
+  const mappedSpecies = species.map(s => (typeof s === 'string' ? s : s.name || ''));
 
   return (
     <>
@@ -407,7 +395,10 @@ export default function TableList({
             <DateInput tableId={idx} date={table.date} setDate={setDate} />
             {table.id && (
               <button
-                onClick={() => deleteTable(table.id)}
+                onClick={() => {
+                  console.log('Calling deleteTable for table with id:', table.id);
+                  deleteTable(table.id);
+                }}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 sm:px-3 sm:py-1 sm:text-sm md:text-base cursor-pointer"
               >
                 Видалити таблицю
