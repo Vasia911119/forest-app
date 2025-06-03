@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { TableData, Row } from '@/types';
+import { TableData } from '../../types/index';
 
 export async function GET() {
   try {
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
           insertedRowIds = insertedRows.map(row => row.id);
           // Оновлюємо table.rows із новими id
           let index = 0;
-          table.rows.forEach((row, i) => {
+          table.rows.forEach((row) => {
             if (row.id === undefined || row.id === null) {
               row.id = insertedRowIds[index++];
             }
