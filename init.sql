@@ -30,8 +30,7 @@ CREATE TABLE purchases (
 -- Таблиця для даних таблиць (дата + рядки)
 CREATE TABLE tables (
   id SERIAL PRIMARY KEY,
-  date TEXT NOT NULL UNIQUE,
-  rows JSONB NOT NULL DEFAULT '[]'
+  date TEXT NOT NULL UNIQUE
 );
 
 -- Додамо індекси для швидшого пошуку

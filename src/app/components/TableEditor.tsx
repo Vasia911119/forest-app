@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import debounce from 'lodash/debounce';
+import debounce from 'lodash.debounce';
 import { TableData } from '../types';
 import TableList from './TableList';
 import TableView from './TableView';
