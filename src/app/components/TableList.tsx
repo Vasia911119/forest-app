@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import DateInput from './DateInput';
 import EditableDataTable from './EditableDataTable';
 import AddRowButton from './AddRowButton';
@@ -17,6 +17,16 @@ interface TableListProps {
   setSpecies: (species: string[]) => void;
   purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[];
   setPurchases: (purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[]) => void;
+}
+
+function getTableKey(table: TableData, idx: number) {
+  if (table.id === undefined || table.id === null) {
+    if (!(table as any)._tmpId) {
+      (table as any)._tmpId = `tmp-${Date.now()}-${Math.random()}`;
+    }
+    return (table as any)._tmpId;
+  }
+  return `table-${table.id}`;
 }
 
 export default function TableList({
@@ -38,6 +48,15 @@ export default function TableList({
   const [newSpecies, setNewSpecies] = useState('');
   const [newPurchase, setNewPurchase] = useState({ buyer: '', product: '', species: '', volume: 0, amount: 0 });
   const [isManageOpen, setIsManageOpen] = useState(false);
+
+  const [loadingForest, setLoadingForest] = useState(false);
+  const [loadingProduct, setLoadingProduct] = useState(false);
+  const [loadingSpecies, setLoadingSpecies] = useState(false);
+  const [loadingPurchase, setLoadingPurchase] = useState(false);
+
+  const mappedForests = useMemo(() => forests.map(f => (typeof f === 'string' ? f : f.name || '')), [forests]);
+  const mappedProducts = useMemo(() => products.map(p => (typeof p === 'string' ? p : p.name || '')), [products]);
+  const mappedSpecies = useMemo(() => species.map(s => (typeof s === 'string' ? s : s.name || '')), [species]);
 
   const addRow = async (tableIdx: number) => {
     if (!tables[tableIdx].date) {
@@ -81,20 +100,24 @@ export default function TableList({
     debouncedSave({ tables: newTables });
   };
 
-  const deleteRow = async (tableIdx: number, rowId: number) => {
+  const deleteRow = async (tableIdx: number, rowId?: number) => {
+    if (!rowId) {
+      alert('Цей рядок ще не збережений у базі або вже видалений.');
+      return;
+    }
     try {
       const table = tables[tableIdx];
       if (!table.id) {
         alert('Таблиця не збережена в базі даних. Спочатку збережіть таблицю.');
         return;
       }
-      const res = await fetch('/api/tables', {
+      const res = await fetch('/api/tables/delete-row', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableId: table.id, rowId }),
       });
       if (!res.ok) throw new Error('Не вдалося видалити рядок');
-
+  
       const newTables = [...tables];
       newTables[tableIdx].rows = newTables[tableIdx].rows.filter(row => row.id !== rowId);
       setTables(newTables);
@@ -142,9 +165,15 @@ export default function TableList({
 
   const setDate = useCallback(
     (tableIdx: number, newDate: string) => {
+      // Перевірка унікальності дати серед інших таблиць
+      if (tables.some((t, idx) => t.date === newDate && idx !== tableIdx)) {
+        alert('Таблиця з такою датою вже існує!');
+        return;
+      }
+  
       const newTables = [...tables];
       let currentTable = newTables[tableIdx];
-
+  
       if (!currentTable.id) {
         fetch('/api/tables/create', {
           method: 'POST',
@@ -175,15 +204,17 @@ export default function TableList({
     [tables, setTables, debouncedSave]
   );
 
+  // Forests CRUD
   const addForest = async () => {
     if (!newForest.trim()) {
       alert('Будь ласка, введіть назву лісництва.');
       return;
     }
-    if (forests.map(f => (typeof f === 'string' ? f : f.name || '')).includes(newForest.trim())) {
+    if (mappedForests.includes(newForest.trim())) {
       alert('Це лісництво вже існує.');
       return;
     }
+    setLoadingForest(true);
     try {
       const res = await fetch('/api/forests', {
         method: 'POST',
@@ -191,13 +222,14 @@ export default function TableList({
         body: JSON.stringify({ name: newForest.trim() }),
       });
       if (!res.ok) throw new Error('Не вдалося додати лісництво');
-      const updatedForests = [...forests, newForest.trim()];
-      setForests(updatedForests.map(f => (typeof f === 'string' ? f : f.name || '')));
+      const updatedForests = [...mappedForests, newForest.trim()];
+      setForests(updatedForests);
       setNewForest('');
     } catch (error) {
       console.error('Помилка додавання лісництва:', error);
       alert('Не вдалося додати лісництво.');
     }
+    setLoadingForest(false);
   };
 
   const deleteForest = async (forest: string) => {
@@ -207,6 +239,7 @@ export default function TableList({
       return;
     }
     if (confirm(`Ви впевнені, що хочете видалити лісництво "${forest}"?`)) {
+      setLoadingForest(true);
       try {
         const res = await fetch('/api/forests', {
           method: 'DELETE',
@@ -214,24 +247,27 @@ export default function TableList({
           body: JSON.stringify({ name: forest }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити лісництво');
-        const updatedForests = forests.map(f => (typeof f === 'string' ? f : f.name || '')).filter(f => f !== forest);
+        const updatedForests = mappedForests.filter(f => f !== forest);
         setForests(updatedForests);
       } catch (error) {
         console.error('Помилка видалення лісництва:', error);
         alert('Не вдалося видалити лісництво.');
       }
+      setLoadingForest(false);
     }
   };
 
+  // Products CRUD
   const addProduct = async () => {
     if (!newProduct.trim()) {
       alert('Будь ласка, введіть назву продукції.');
       return;
     }
-    if (products.map(p => (typeof p === 'string' ? p : p.name || '')).includes(newProduct.trim())) {
+    if (mappedProducts.includes(newProduct.trim())) {
       alert('Ця продукція вже існує.');
       return;
     }
+    setLoadingProduct(true);
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
@@ -239,13 +275,14 @@ export default function TableList({
         body: JSON.stringify({ name: newProduct.trim() }),
       });
       if (!res.ok) throw new Error('Не вдалося додати продукцію');
-      const updatedProducts = [...products, newProduct.trim()];
-      setProducts(updatedProducts.map(p => (typeof p === 'string' ? p : p.name || '')));
+      const updatedProducts = [...mappedProducts, newProduct.trim()];
+      setProducts(updatedProducts);
       setNewProduct('');
     } catch (error) {
       console.error('Помилка додавання продукції:', error);
       alert('Не вдалося додати продукцію.');
     }
+    setLoadingProduct(false);
   };
 
   const deleteProduct = async (product: string) => {
@@ -257,6 +294,7 @@ export default function TableList({
       return;
     }
     if (confirm(`Ви впевнені, що хочете видалити продукцію "${product}"?`)) {
+      setLoadingProduct(true);
       try {
         const res = await fetch('/api/products', {
           method: 'DELETE',
@@ -264,24 +302,27 @@ export default function TableList({
           body: JSON.stringify({ name: product }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити продукцію');
-        const updatedProducts = products.map(p => (typeof p === 'string' ? p : p.name || '')).filter(p => p !== product);
+        const updatedProducts = mappedProducts.filter(p => p !== product);
         setProducts(updatedProducts);
       } catch (error) {
         console.error('Помилка видалення продукції:', error);
         alert('Не вдалося видалити продукцію.');
       }
+      setLoadingProduct(false);
     }
   };
 
+  // Species CRUD
   const addSpecies = async () => {
     if (!newSpecies.trim()) {
       alert('Будь ласка, введіть породу.');
       return;
     }
-    if (species.map(s => (typeof s === 'string' ? s : s.name || '')).includes(newSpecies.trim())) {
+    if (mappedSpecies.includes(newSpecies.trim())) {
       alert('Ця порода вже існує.');
       return;
     }
+    setLoadingSpecies(true);
     try {
       const res = await fetch('/api/species', {
         method: 'POST',
@@ -289,13 +330,14 @@ export default function TableList({
         body: JSON.stringify({ name: newSpecies.trim() }),
       });
       if (!res.ok) throw new Error('Не вдалося додати породу');
-      const updatedSpecies = [...species, newSpecies.trim()];
-      setSpecies(updatedSpecies.map(s => (typeof s === 'string' ? s : s.name || '')));
+      const updatedSpecies = [...mappedSpecies, newSpecies.trim()];
+      setSpecies(updatedSpecies);
       setNewSpecies('');
     } catch (error) {
       console.error('Помилка додавання породи:', error);
       alert('Не вдалося додати породу.');
     }
+    setLoadingSpecies(false);
   };
 
   const deleteSpecies = async (specie: string) => {
@@ -307,6 +349,7 @@ export default function TableList({
       return;
     }
     if (confirm(`Ви впевнені, що хочете видалити породу "${specie}"?`)) {
+      setLoadingSpecies(true);
       try {
         const res = await fetch('/api/species', {
           method: 'DELETE',
@@ -314,24 +357,40 @@ export default function TableList({
           body: JSON.stringify({ name: specie }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити породу');
-        const updatedSpecies = species.map(s => (typeof s === 'string' ? s : s.name || '')).filter(s => s !== specie);
+        const updatedSpecies = mappedSpecies.filter(s => s !== specie);
         setSpecies(updatedSpecies);
       } catch (error) {
         console.error('Помилка видалення породи:', error);
         alert('Не вдалося видалити породу.');
       }
+      setLoadingSpecies(false);
     }
   };
 
+  // Purchases CRUD
   const addPurchase = async () => {
-    if (!newPurchase.buyer.trim() || !newPurchase.product.trim() || !newPurchase.species.trim() || newPurchase.volume <= 0 || newPurchase.amount <= 0) {
+    if (
+      !newPurchase.buyer.trim() ||
+      !newPurchase.product.trim() ||
+      !newPurchase.species.trim() ||
+      newPurchase.volume <= 0 ||
+      newPurchase.amount <= 0
+    ) {
       alert('Будь ласка, заповніть усі поля для інформації про покупку.');
       return;
     }
-    if (purchases.some(p => p.buyer === newPurchase.buyer && p.product === newPurchase.product && p.species === newPurchase.species)) {
+    if (
+      purchases.some(
+        p =>
+          p.buyer === newPurchase.buyer &&
+          p.product === newPurchase.product &&
+          p.species === newPurchase.species
+      )
+    ) {
       alert('Ця інформація про покупку вже існує.');
       return;
     }
+    setLoadingPurchase(true);
     try {
       const res = await fetch('/api/purchases', {
         method: 'POST',
@@ -352,6 +411,7 @@ export default function TableList({
       console.error('Помилка додавання інформації про покупку:', error);
       alert('Не вдалося додати інформацію про покупку.');
     }
+    setLoadingPurchase(false);
   };
 
   const deletePurchase = async (purchase: { buyer: string; product: string; species: string; volume: number; amount: number }) => {
@@ -360,7 +420,12 @@ export default function TableList({
       alert('Цей покупець використовується в таблиці. Видаліть відповідні рядки перед видаленням.');
       return;
     }
-    if (confirm(`Ви впевнені, що хочете видалити інформацію про покупку "${purchase.buyer} - ${purchase.product} - ${purchase.species}"?`)) {
+    if (
+      confirm(
+        `Ви впевнені, що хочете видалити інформацію про покупку "${purchase.buyer} - ${purchase.product} - ${purchase.species}"?`
+      )
+    ) {
+      setLoadingPurchase(true);
       try {
         const res = await fetch('/api/purchases', {
           method: 'DELETE',
@@ -372,34 +437,35 @@ export default function TableList({
           }),
         });
         if (!res.ok) throw new Error('Не вдалося видалити інформацію про покупку');
-        const updatedPurchases = purchases.filter(p =>
-          !(p.buyer === purchase.buyer && p.product === purchase.product && p.species === purchase.species)
+        const updatedPurchases = purchases.filter(
+          p =>
+            !(
+              p.buyer === purchase.buyer &&
+              p.product === purchase.product &&
+              p.species === purchase.species
+            )
         );
         setPurchases(updatedPurchases);
       } catch (error) {
         console.error('Помилка видалення інформації про покупку:', error);
         alert('Не вдалося видалити інформацію про покупку.');
       }
+      setLoadingPurchase(false);
     }
   };
-
-  const mappedForests = forests.map(f => (typeof f === 'string' ? f : f.name || ''));
-  const mappedProducts = products.map(p => (typeof p === 'string' ? p : p.name || ''));
-  const mappedSpecies = species.map(s => (typeof s === 'string' ? s : s.name || ''));
 
   return (
     <>
       {tables.map((table, idx) => (
-        <div key={idx} className="mb-6 border rounded p-4 sm:p-2">
+        <div key={getTableKey(table, idx)} className="mb-6 border rounded p-4 sm:p-2">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0">
             <DateInput tableId={idx} date={table.date} setDate={setDate} />
             {table.id && (
               <button
-                onClick={() => {
-                  console.log('Calling deleteTable for table with id:', table.id);
-                  deleteTable(table.id);
-                }}
+                onClick={() => deleteTable(table.id)}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 sm:px-3 sm:py-1 sm:text-sm md:text-base cursor-pointer"
+                aria-label="Видалити таблицю"
+                type="button"
               >
                 Видалити таблицю
               </button>
@@ -423,6 +489,8 @@ export default function TableList({
         <button
           onClick={() => setIsManageOpen(!isManageOpen)}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer"
+          type="button"
+          aria-label={isManageOpen ? "Приховати керування значеннями" : "Керування значеннями"}
         >
           {isManageOpen ? 'Приховати керування значеннями' : 'Керування значеннями'}
         </button>
@@ -430,7 +498,7 @@ export default function TableList({
           <div className="mt-4 p-4 border rounded">
             <h3 className="text-lg font-bold mb-4">Керування значеннями</h3>
             <div className="flex flex-col gap-6">
-              {/* Лісництво */}
+              {/* Лісництва */}
               <div className="flex flex-col gap-2">
                 <h4 className="text-md font-semibold">Лісництва</h4>
                 <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
@@ -440,36 +508,32 @@ export default function TableList({
                     onChange={e => setNewForest(e.target.value)}
                     placeholder="Нове лісництво"
                     className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
+                    aria-label="Додати нове лісництво"
                   />
                   <button
                     onClick={addForest}
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sm:text-sm md:text-base cursor-pointer"
+                    disabled={loadingForest}
+                    type="button"
+                    aria-label="Додати лісництво"
                   >
-                    Додати лісництво
+                    {loadingForest ? "Додається..." : "Додати лісництво"}
                   </button>
                 </div>
                 <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {mappedForests.map((forest, idx) => (
-                    <li key={`${forest}-${idx}`} className="flex justify-between items-center py-1">
+                  {mappedForests.map((forest) => (
+                    <li key={forest} className="flex justify-between items-center py-1">
                       <span>{forest}</span>
                       <button
                         onClick={() => deleteForest(forest)}
                         className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
                         title="Видалити лісництво"
+                        aria-label={`Видалити лісництво ${forest}`}
+                        type="button"
+                        disabled={loadingForest}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-6 h-6 text-red-600 hover:text-red-800"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
                         </svg>
                       </button>
                     </li>
@@ -486,43 +550,39 @@ export default function TableList({
                     onChange={e => setNewProduct(e.target.value)}
                     placeholder="Нове найменування продукції"
                     className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
+                    aria-label="Додати нову продукцію"
                   />
                   <button
                     onClick={addProduct}
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sm:text-sm md:text-base cursor-pointer"
+                    disabled={loadingProduct}
+                    type="button"
+                    aria-label="Додати продукцію"
                   >
-                    Додати найменування продукції
+                    {loadingProduct ? "Додається..." : "Додати найменування продукції"}
                   </button>
                 </div>
                 <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {mappedProducts.map((product, idx) => (
-                    <li key={`${product}-${idx}`} className="flex justify-between items-center py-1">
+                  {mappedProducts.map((product) => (
+                    <li key={product} className="flex justify-between items-center py-1">
                       <span>{product}</span>
                       <button
                         onClick={() => deleteProduct(product)}
                         className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
                         title="Видалити продукцію"
+                        aria-label={`Видалити продукцію ${product}`}
+                        type="button"
+                        disabled={loadingProduct}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-6 h-6 text-red-600 hover:text-red-800"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
                         </svg>
                       </button>
                     </li>
                   ))}
                 </ul>
               </div>
-              {/* Порода */}
+              {/* Породи */}
               <div className="flex flex-col gap-2">
                 <h4 className="text-md font-semibold">Породи</h4>
                 <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
@@ -532,36 +592,32 @@ export default function TableList({
                     onChange={e => setNewSpecies(e.target.value)}
                     placeholder="Нова порода"
                     className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
+                    aria-label="Додати нову породу"
                   />
                   <button
                     onClick={addSpecies}
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sm:text-sm md:text-base cursor-pointer"
+                    disabled={loadingSpecies}
+                    type="button"
+                    aria-label="Додати породу"
                   >
-                    Додати породу
+                    {loadingSpecies ? "Додається..." : "Додати породу"}
                   </button>
                 </div>
                 <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {mappedSpecies.map((specie, idx) => (
-                    <li key={`${specie}-${idx}`} className="flex justify-between items-center py-1">
+                  {mappedSpecies.map((specie) => (
+                    <li key={specie} className="flex justify-between items-center py-1">
                       <span>{specie}</span>
                       <button
                         onClick={() => deleteSpecies(specie)}
                         className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
                         title="Видалити породу"
+                        aria-label={`Видалити породу ${specie}`}
+                        type="button"
+                        disabled={loadingSpecies}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-6 h-6 text-red-600 hover:text-red-800"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
                         </svg>
                       </button>
                     </li>
@@ -578,6 +634,7 @@ export default function TableList({
                     onChange={e => setNewPurchase({ ...newPurchase, buyer: e.target.value })}
                     placeholder="Покупець"
                     className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
+                    aria-label="Покупець для покупки"
                   />
                   <input
                     type="text"
@@ -585,6 +642,7 @@ export default function TableList({
                     onChange={e => setNewPurchase({ ...newPurchase, product: e.target.value })}
                     placeholder="Продукція"
                     className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
+                    aria-label="Продукція для покупки"
                   />
                   <input
                     type="text"
@@ -592,6 +650,7 @@ export default function TableList({
                     onChange={e => setNewPurchase({ ...newPurchase, species: e.target.value })}
                     placeholder="Порода"
                     className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
+                    aria-label="Порода для покупки"
                   />
                   <input
                     type="number"
@@ -601,6 +660,7 @@ export default function TableList({
                     className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base w-24 cursor-pointer"
                     min="0"
                     step="1"
+                    aria-label="Об’єм покупки"
                   />
                   <input
                     type="number"
@@ -610,36 +670,32 @@ export default function TableList({
                     className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base w-24 cursor-pointer"
                     min="0"
                     step="1"
+                    aria-label="Сума покупки"
                   />
                   <button
                     onClick={addPurchase}
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sm:text-sm md:text-base cursor-pointer"
+                    disabled={loadingPurchase}
+                    type="button"
+                    aria-label="Додати інформацію про покупку"
                   >
-                    Додати інформацію про покупку
+                    {loadingPurchase ? "Додається..." : "Додати інформацію про покупку"}
                   </button>
                 </div>
                 <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {purchases.map((purchase, idx) => (
-                    <li key={`${purchase.buyer}-${idx}`} className="flex justify-between items-center py-1">
+                  {purchases.map((purchase) => (
+                    <li key={`${purchase.buyer}-${purchase.product}-${purchase.species}`} className="flex justify-between items-center py-1">
                       <span>{`${purchase.buyer} - ${purchase.product} - ${purchase.species} (${purchase.volume} м³, ${purchase.amount} грн)`}</span>
                       <button
                         onClick={() => deletePurchase(purchase)}
                         className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
                         title="Видалити інформацію про покупку"
+                        aria-label={`Видалити інформацію про покупку: ${purchase.buyer}, ${purchase.product}, ${purchase.species}`}
+                        type="button"
+                        disabled={loadingPurchase}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-6 h-6 text-red-600 hover:text-red-800"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"
-                          />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
                         </svg>
                       </button>
                     </li>

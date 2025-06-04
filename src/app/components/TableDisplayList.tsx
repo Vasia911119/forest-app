@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { exportToExcel } from '../../utils/exportToExcel';
 import { Row, TableData } from '../types';
 import Filters from './Filters';
@@ -19,37 +19,37 @@ export default function TableDisplayList({ tables, forests }: TableDisplayListPr
   const [sortOrders, setSortOrders] = useState<('asc' | 'desc')[]>(tables.map(() => 'asc'));
   const [showCharts, setShowCharts] = useState<boolean[]>(tables.map(() => false));
 
-  const updateFilter = (tableIdx: number, newFilter: { forest: string; buyer: string; species: string }) => {
+  const updateFilter = useCallback((tableIdx: number, newFilter: { forest: string; buyer: string; species: string }) => {
     setFilters(prev => {
       const newFilters = [...prev];
       newFilters[tableIdx] = newFilter;
       return newFilters;
     });
-  };
+  }, []);
 
-  const updateSortBy = (tableIdx: number, newSortBy: keyof Row | null) => {
+  const updateSortBy = useCallback((tableIdx: number, newSortBy: keyof Row | null) => {
     setSortBys(prev => {
       const newSortBys = [...prev];
       newSortBys[tableIdx] = newSortBy;
       return newSortBys;
     });
-  };
+  }, []);
 
-  const updateSortOrder = (tableIdx: number, newSortOrder: 'asc' | 'desc') => {
+  const updateSortOrder = useCallback((tableIdx: number, newSortOrder: 'asc' | 'desc') => {
     setSortOrders(prev => {
       const newSortOrders = [...prev];
       newSortOrders[tableIdx] = newSortOrder;
       return newSortOrders;
     });
-  };
+  }, []);
 
-  const updateShowChart = (tableIdx: number, newShowChart: boolean) => {
+  const updateShowChart = useCallback((tableIdx: number, newShowChart: boolean) => {
     setShowCharts(prev => {
       const newShowCharts = [...prev];
       newShowCharts[tableIdx] = newShowChart;
       return newShowCharts;
     });
-  };
+  }, []);
 
   const filteredAndSortedRowsList = useMemo(() => {
     const tablesArray = Array.isArray(tables) ? tables : [];
@@ -110,25 +110,25 @@ export default function TableDisplayList({ tables, forests }: TableDisplayListPr
     });
   }, [filteredAndSortedRowsList, forests]);
 
-  const handleSort = (tableIdx: number, field: keyof Row) => {
+  const handleSort = useCallback((tableIdx: number, field: keyof Row) => {
     if (sortBys[tableIdx] === field) {
       updateSortOrder(tableIdx, sortOrders[tableIdx] === 'asc' ? 'desc' : 'asc');
     } else {
       updateSortBy(tableIdx, field);
       updateSortOrder(tableIdx, 'asc');
     }
-  };
+  }, [sortBys, sortOrders, updateSortBy, updateSortOrder]);
 
-  const handleExportToExcel = (tableIdx: number) => {
+  const handleExportToExcel = useCallback((tableIdx: number) => {
     exportToExcel(tables[tableIdx], filteredAndSortedRowsList[tableIdx], totalsList[tableIdx].totalVolume, totalsList[tableIdx].totalAmount);
-  };
+  }, [tables, filteredAndSortedRowsList, totalsList]);
 
   const tablesArray = Array.isArray(tables) ? tables : [];
 
   return (
     <>
       {tablesArray.map((table, idx) => (
-        <div key={idx} className="mb-6 border rounded p-4 sm:p-2">
+        <div key={table.id ?? idx} className="mb-6 border rounded p-4 sm:p-2">
           {table.date && (
             <h2 className="text-xl sm:text-lg md:text-2xl font-bold mb-4 sm:mb-2">
               Орієнтовний план реалізації на {new Date(table.date).toLocaleDateString('uk-UA')} (Таблиця {idx + 1})

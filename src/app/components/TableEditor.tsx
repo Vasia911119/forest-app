@@ -12,9 +12,15 @@ export default function TableEditor() {
   const [products, setProducts] = useState<string[]>([]);
   const [species, setSpecies] = useState<string[]>([]);
   const [purchases, setPurchases] = useState<{ buyer: string; product: string; species: string; volume: number; amount: number }[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Для модалки вибору дати при створенні таблиці
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [pendingDate, setPendingDate] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
       try {
         const tablesRes = await fetch('/api/tables');
         if (!tablesRes.ok) throw new Error('Не вдалося завантажити таблиці');
@@ -43,82 +49,154 @@ export default function TableEditor() {
       } catch (error) {
         console.error('Помилка завантаження даних:', error);
         alert('Не вдалося завантажити дані.');
+      } finally {
+        setLoading(false);
       }
     };
 
     loadData();
   }, []);
 
+  // Фільтруємо пусті рядки перед збереженням
+  function sanitizeTables(tables: TableData[]): TableData[] {
+    return tables.map(t => ({
+      ...t,
+      rows: (t.rows || []).filter(
+        r =>
+          r &&
+          typeof r === 'object' &&
+          'forest' in r &&
+          'product' in r &&
+          'species' in r &&
+          r.forest !== '' &&
+          r.product !== '' &&
+          r.species !== ''
+      )
+    }));
+  }
+
   const debouncedSave = useMemo(
     () =>
-      debounce((data: { tables: TableData[] }) => {
-        console.log('Sending to API:', JSON.stringify(data, null, 2));
-        fetch('/api/tables', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        })
-          .then(res => {
-            if (!res.ok) throw new Error('Не вдалося зберегти дані');
-            return res.json();
-          })
-          .then(result => {
-            console.log('API response:', result);
-          })
-          .catch(error => {
-            console.error('Помилка збереження:', error);
-            alert('Не вдалося зберегти дані.');
+      debounce(async (rawData: { tables: TableData[] }) => {
+        const data = { tables: sanitizeTables(rawData.tables) };
+        console.log('debouncedSave payload:', JSON.stringify(data, null, 2));
+        try {
+          const res = await fetch('/api/tables', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
           });
+          if (!res.ok) {
+            let text = '';
+            try {
+              text = await res.text();
+            } catch {}
+            throw new Error('Не вдалося зберегти дані. Сервер відповів: ' + text);
+          }
+        } catch (error) {
+          console.error('Помилка збереження:', error);
+          alert('Не вдалося зберегти дані: ' + (error instanceof Error ? error.message : error));
+        }
       }, 1000),
     []
   );
 
-  const addTable = useCallback(() => {
-    if (tables.length > 0) {
-      const lastTable = tables[tables.length - 1];
-      if (!lastTable.date) {
-        alert('Будь ласка, введіть дату для поточної таблиці, перш ніж додавати нову.');
-        return;
-      }
+  // Додаємо таблицю через модалку з вибором дати
+  const openDateModal = useCallback(() => {
+    setPendingDate('');
+    setShowDateModal(true);
+  }, []);
+
+  const createTableWithDate = useCallback(async () => {
+    if (!pendingDate) return;
+    // Перевірка, щоб не було дубля дати (опційно)
+    if (tables.some(t => t.date === pendingDate)) {
+      alert('Таблиця з такою датою вже існує!');
+      return;
     }
+    try {
+      const res = await fetch('/api/tables/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: pendingDate }),
+      });
+      if (!res.ok) throw new Error('Не вдалося створити таблицю');
+      const { id } = await res.json();
+      const newTable: TableData = {
+        id,
+        date: pendingDate,
+        rows: [],
+      };
+      setTables(prev => [...prev, newTable]);
+      setPendingDate('');
+      setShowDateModal(false);
+    } catch (error) {
+      alert('Не вдалося створити таблицю.');
+    }
+  }, [pendingDate, tables]);
 
-    const newTable: TableData = {
-      date: '',
-      rows: [],
-    };
-    setTables(prev => [...prev, newTable]);
-  }, [tables]);
-
+  // ОНОВЛЕНА ФУНКЦІЯ ВИДАЛЕННЯ ТАБЛИЦІ
   const deleteTable = useCallback(
     async (tableId: number) => {
-      console.log('Deleting table with id:', tableId);
       try {
         const res = await fetch('/api/tables/delete', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: tableId }),
         });
-        const response = await res.json();
-        console.log('Delete API response:', response);
+        await res.json();
         if (!res.ok) throw new Error('Не вдалося видалити таблицю');
-        const newTables = tables.filter(table => table.id !== tableId);
-        setTables(newTables);
+        setTables(prevTables => prevTables.filter(table => table.id !== tableId));
       } catch (error) {
         console.error('Помилка видалення таблиці:', error);
         alert('Не вдалося видалити таблицю.');
       }
     },
-    [tables]
+    [] // setTables не змінюється, тому залежності порожні
   );
 
   return (
     <div className="w-full overflow-x-auto p-4 sm:p-2">
       <button
-        onClick={addTable}
+        onClick={openDateModal}
         className="mb-4 sm:mb-2 bg-green-500 text-white px-4 py-2 sm:px-3 sm:py-1 rounded hover:bg-green-600 sm:text-sm md:text-base cursor-pointer"
+        disabled={loading}
+        type="button"
+        aria-label="Додати таблицю"
       >
-        Додати таблицю
+        {loading ? "Завантаження..." : "Додати таблицю"}
       </button>
+
+      {/* Модалка вибору дати для створення нової таблиці */}
+      {showDateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg min-w-[300px] flex flex-col gap-4">
+            <label htmlFor="table-date" className="font-semibold">Оберіть дату для нової таблиці:</label>
+            <input
+              id="table-date"
+              type="date"
+              value={pendingDate}
+              onChange={e => setPendingDate(e.target.value)}
+              className="border px-2 py-1 rounded"
+              required
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowDateModal(false)}
+                className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                type="button"
+              >Скасувати</button>
+              <button
+                className="px-3 py-1 rounded bg-green-500 hover:bg-green-600 text-white"
+                type="button"
+                disabled={!pendingDate}
+                onClick={createTableWithDate}
+              >Створити</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <TableList
         tables={tables}
         setTables={setTables}
@@ -133,7 +211,7 @@ export default function TableEditor() {
         purchases={purchases}
         setPurchases={setPurchases}
       />
-      <TableView />
+      <TableView tables={tables} forests={forests} />
     </div>
   );
 }

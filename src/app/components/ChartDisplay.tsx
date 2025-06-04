@@ -3,6 +3,7 @@
 import { Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { useMediaQuery } from 'react-responsive';
+import { useMemo } from 'react';
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -13,7 +14,6 @@ interface ChartDisplayProps {
   };
 }
 
-// Функція для генерації випадкового кольору у форматі HEX
 const generateRandomColor = (): string => {
   const letters = '0123456789ABCDEF';
   let color = '#';
@@ -26,7 +26,12 @@ const generateRandomColor = (): string => {
 export default function ChartDisplay({ chartData }: ChartDisplayProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
 
-  // Дані для стовпчикового графіка
+  // Генеруємо кольори лише при зміні labels
+  const randomColors = useMemo(
+    () => chartData.labels.map(() => generateRandomColor()),
+    [chartData.labels]
+  );
+
   const processedChartData = {
     labels: chartData.labels,
     datasets: chartData.datasets.map(dataset => ({
@@ -36,10 +41,6 @@ export default function ChartDisplay({ chartData }: ChartDisplayProps) {
     })),
   };
 
-  // Генерація випадкових кольорів для кожного підрозділу
-  const randomColors = chartData.labels.map(() => generateRandomColor());
-
-  // Дані для кругового графіка з випадковими кольорами
   const pieChartData = {
     labels: chartData.labels,
     datasets: [{

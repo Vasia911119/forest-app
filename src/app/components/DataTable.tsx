@@ -10,7 +10,17 @@ interface DataTableProps {
   handleSort: (field: keyof Row) => void;
 }
 
-const RowComponent = memo(({ row, idx }: { row: Row; idx: number }) => (<tr key={`${row.id}-${idx}`}><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{idx + 1}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.forest}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.buyer}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.product}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.species}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{Math.round(row.volume)}</td><td className="border px-2 py-1 sm:px-1 sm:py-0.5">{Math.round(row.amount)}</td></tr>));
+const RowComponent = memo(({ row, idx }: { row: Row; idx: number }) => (
+  <tr key={`${row.id}-${idx}`}>
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{idx + 1}</td>
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.forest}</td>
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.buyer}</td>
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.product}</td>
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.species}</td>
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.volume}</td>
+    <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{row.amount}</td>
+  </tr>
+));
 RowComponent.displayName = 'RowComponent';
 
 export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmount, sortBy, sortOrder, handleSort }: DataTableProps) {
@@ -24,10 +34,20 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
             <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal">Покупець</th>
             <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[120px] whitespace-normal">Найменування продукції</th>
             <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[80px] whitespace-normal">Порода</th>
-            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal cursor-pointer" onClick={() => handleSort('volume')}>
+            <th
+              className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal cursor-pointer select-none"
+              onClick={() => handleSort('volume')}
+              tabIndex={0}
+              role="button"
+            >
               Орієнтовний об’єм (м³) {sortBy === 'volume' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[120px] whitespace-normal cursor-pointer" onClick={() => handleSort('amount')}>
+            <th
+              className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[120px] whitespace-normal cursor-pointer select-none"
+              onClick={() => handleSort('amount')}
+              tabIndex={0}
+              role="button"
+            >
               Орієнтовна сума без ПДВ (грн) {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
           </tr>
