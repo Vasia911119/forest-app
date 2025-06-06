@@ -154,6 +154,8 @@ export default function TableEditor() {
     },
     [] // setTables не змінюється, тому залежності порожні
   );
+  console.log('TableEditor tables:', tables);
+  console.log('TableEditor forests:', forests);
 
   return (
     <div className="w-full overflow-x-auto p-4 sm:p-2">
@@ -211,7 +213,7 @@ export default function TableEditor() {
         purchases={purchases}
         setPurchases={setPurchases}
       />
-      <TableView tables={tables} forests={forests} />
+      <TableView tables={tables || []} forests={forests || []} />
     </div>
   );
 }
