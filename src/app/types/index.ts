@@ -1,5 +1,5 @@
 export interface Row {
-  id: number;
+  id?: number;
   forest: string;
   buyer: string;
   product: string;
@@ -9,7 +9,8 @@ export interface Row {
 }
 
 export interface TableData {
-  id: number;
+  id?: number;
   date: string;
-  rows: Row[]; // Масив рядків, отриманий із таблиці rows
+  rows: Row[];
+  _tmpId?: string;
 }

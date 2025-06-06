@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from 'react';
 import { exportToExcel } from '../../utils/exportToExcel';
-import { Row, TableData } from '../types';
+import type { Row, TableData } from '../types';
 import Filters from './Filters';
 import DataTable from './DataTable';
 import ChartDisplay from './ChartDisplay';
@@ -60,9 +60,9 @@ export default function TableDisplayList({ tables, forests }: TableDisplayListPr
       return table.rows
         .filter(row =>
           row &&
-          row.forest?.toLowerCase().includes(filters[tableIdx].forest.toLowerCase()) &&
-          row.buyer?.toLowerCase().includes(filters[tableIdx].buyer.toLowerCase()) &&
-          row.species?.toLowerCase().includes(filters[tableIdx].species.toLowerCase())
+          row.forest?.toLowerCase().includes((filters[tableIdx]?.forest ?? '').toLowerCase()) &&
+          row.buyer?.toLowerCase().includes((filters[tableIdx]?.buyer ?? '').toLowerCase()) &&
+          row.species?.toLowerCase().includes((filters[tableIdx]?.species ?? '').toLowerCase())
         )
         .sort((a, b) => {
           const sortBy = sortBys[tableIdx];
@@ -120,7 +120,11 @@ export default function TableDisplayList({ tables, forests }: TableDisplayListPr
   }, [sortBys, sortOrders, updateSortBy, updateSortOrder]);
 
   const handleExportToExcel = useCallback((tableIdx: number) => {
-    exportToExcel(tables[tableIdx], filteredAndSortedRowsList[tableIdx], totalsList[tableIdx].totalVolume, totalsList[tableIdx].totalAmount);
+    exportToExcel(
+    tables[tableIdx] ?? { id: 0, date: '', rows: [] },
+    filteredAndSortedRowsList[tableIdx] ?? [],
+    totalsList[tableIdx]?.totalVolume ?? 0,
+    totalsList[tableIdx]?.totalAmount ?? 0)
   }, [tables, filteredAndSortedRowsList, totalsList]);
 
   const tablesArray = Array.isArray(tables) ? tables : [];
@@ -128,35 +132,35 @@ export default function TableDisplayList({ tables, forests }: TableDisplayListPr
   return (
     <>
       {tablesArray.map((table, idx) => (
-        <div key={table.id ?? idx} className="mb-6 border rounded p-4 sm:p-2">
-          {table.date && (
-            <h2 className="text-xl sm:text-lg md:text-2xl font-bold mb-4 sm:mb-2">
-              Орієнтовний план реалізації на {new Date(table.date).toLocaleDateString('uk-UA')} (Таблиця {idx + 1})
-            </h2>
-          )}
-          <Filters
-            filter={filters[idx]}
-            setFilter={(newFilter) => updateFilter(idx, newFilter)}
-            sortBy={sortBys[idx]}
-            sortOrder={sortOrders[idx]}
-            handleSort={(field) => handleSort(idx, field)}
-          />
-          <DataTable
-            filteredAndSortedRows={filteredAndSortedRowsList[idx]}
-            totalVolume={totalsList[idx].totalVolume}
-            totalAmount={totalsList[idx].totalAmount}
-            sortBy={sortBys[idx]}
-            sortOrder={sortOrders[idx]}
-            handleSort={(field) => handleSort(idx, field)}
-          />
-          <ExportButtons
-            exportToExcel={() => handleExportToExcel(idx)}
-            showChart={showCharts[idx]}
-            setShowChart={(newShowChart) => updateShowChart(idx, newShowChart)}
-          />
-          {showCharts[idx] && <ChartDisplay chartData={chartDataList[idx]} />}
-        </div>
-      ))}
+  <div key={table.id ?? idx} className="mb-6 border rounded p-4 sm:p-2">
+    {table.date && (
+      <h2 className="text-xl sm:text-lg md:text-2xl font-bold mb-4 sm:mb-2">
+        Орієнтовний план реалізації на {new Date(table.date).toLocaleDateString('uk-UA')} (Таблиця {idx + 1})
+      </h2>
+    )}
+    <Filters
+      filter={filters[idx] ?? { forest: '', buyer: '', species: '' }}
+      setFilter={(newFilter) => updateFilter(idx, newFilter)}
+      sortBy={sortBys[idx] ?? null}
+      sortOrder={sortOrders[idx] ?? 'asc'}
+      handleSort={(field) => handleSort(idx, field)}
+    />
+    <DataTable
+      filteredAndSortedRows={filteredAndSortedRowsList[idx] ?? []}
+      totalVolume={totalsList[idx]?.totalVolume ?? 0}
+      totalAmount={totalsList[idx]?.totalAmount ?? 0}
+      sortBy={sortBys[idx] ?? null}
+      sortOrder={sortOrders[idx] ?? 'asc'}
+      handleSort={(field) => handleSort(idx, field)}
+    />
+    <ExportButtons
+      exportToExcel={() => handleExportToExcel(idx)}
+      showChart={showCharts[idx] ?? false}
+      setShowChart={(newShowChart) => updateShowChart(idx, newShowChart)}
+    />
+    {(showCharts[idx] ?? false) && <ChartDisplay chartData={chartDataList[idx] ?? { labels: [], datasets: [] }} />}
+  </div>
+))}
     </>
   );
 }

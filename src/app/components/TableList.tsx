@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import DateInput from './DateInput';
 import EditableDataTable from './EditableDataTable';
 import AddRowButton from './AddRowButton';
-import { Row, TableData } from '../types';
+import type { Row, TableData } from '../types';
 
 interface TableListProps {
   tables: TableData[];
@@ -19,12 +19,12 @@ interface TableListProps {
   setPurchases: (purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[]) => void;
 }
 
-function getTableKey(table: TableData, idx: number) {
+function getTableKey(table: TableData) {
   if (table.id === undefined || table.id === null) {
-    if (!(table as any)._tmpId) {
-      (table as any)._tmpId = `tmp-${Date.now()}-${Math.random()}`;
+    if (!table._tmpId) {
+      table._tmpId = `tmp-${Date.now()}-${Math.random()}`;
     }
-    return (table as any)._tmpId;
+    return table._tmpId;
   }
   return `table-${table.id}`;
 }
@@ -59,12 +59,13 @@ export default function TableList({
   const mappedSpecies = useMemo(() => species.map(s => (typeof s === 'string' ? s : s.name || '')), [species]);
 
   const addRow = async (tableIdx: number) => {
-    if (!tables[tableIdx].date) {
+    const table = tables[tableIdx];
+      if (!table || !table.date) {
       alert('Будь ласка, спочатку введіть дату для цієї таблиці.');
-      return;
-    }
+  return;
+}
 
-    let currentTable = tables[tableIdx];
+    let currentTable = table;
     if (!currentTable.id) {
       try {
         const res = await fetch('/api/tables/create', {
@@ -86,7 +87,6 @@ export default function TableList({
     }
 
     const newRow: Row = {
-      id: undefined,
       forest: '',
       buyer: '',
       product: '',
@@ -107,7 +107,7 @@ export default function TableList({
     }
     try {
       const table = tables[tableIdx];
-      if (!table.id) {
+      if (!table || !table.id) {
         alert('Таблиця не збережена в базі даних. Спочатку збережіть таблицю.');
         return;
       }
@@ -119,6 +119,7 @@ export default function TableList({
       if (!res.ok) throw new Error('Не вдалося видалити рядок');
   
       const newTables = [...tables];
+      if (!newTables[tableIdx]?.rows) return;
       newTables[tableIdx].rows = newTables[tableIdx].rows.filter(row => row.id !== rowId);
       setTables(newTables);
       debouncedSave({ tables: newTables });
@@ -130,6 +131,7 @@ export default function TableList({
 
   const handleFieldChange = (tableIdx: number, rowIdx: number, field: keyof Row, value: string | number) => {
     const newTables = [...tables];
+    if (!newTables[tableIdx] || !newTables[tableIdx].rows[rowIdx]) return;
     (newTables[tableIdx].rows[rowIdx][field] as string | number) = value;
     setTables(newTables);
     debouncedSave({ tables: newTables });
@@ -137,6 +139,7 @@ export default function TableList({
 
   const handleBuyerChange = (tableIdx: number, rowIdx: number, buyer: string) => {
     const newTables = [...tables];
+    if (!newTables[tableIdx] || !newTables[tableIdx].rows[rowIdx]) return;
     const newRow = { ...newTables[tableIdx].rows[rowIdx], buyer };
 
     if (!buyer) {
@@ -173,7 +176,8 @@ export default function TableList({
   
       const newTables = [...tables];
       let currentTable = newTables[tableIdx];
-  
+      
+      if (!currentTable) return;
       if (!currentTable.id) {
         fetch('/api/tables/create', {
           method: 'POST',
@@ -185,6 +189,7 @@ export default function TableList({
             return res.json();
           })
           .then(({ id }) => {
+            if (!currentTable) return;
             currentTable = { ...currentTable, id, date: newDate };
             newTables[tableIdx] = currentTable;
             setTables(newTables);
@@ -457,12 +462,12 @@ export default function TableList({
   return (
     <>
       {tables.map((table, idx) => (
-        <div key={getTableKey(table, idx)} className="mb-6 border rounded p-4 sm:p-2">
+        <div key={getTableKey(table,)} className="mb-6 border rounded p-4 sm:p-2">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0">
             <DateInput tableId={idx} date={table.date} setDate={setDate} />
-            {table.id && (
+            {typeof table.id === "number" && (
               <button
-                onClick={() => deleteTable(table.id)}
+                onClick={() => deleteTable(table.id!)}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 sm:px-3 sm:py-1 sm:text-sm md:text-base cursor-pointer"
                 aria-label="Видалити таблицю"
                 type="button"

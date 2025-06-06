@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import debounce from 'lodash.debounce';
-import { TableData } from '../types';
+import type { TableData } from '../types';
 import TableList from './TableList';
-import TableView from './TableView';
 
 export default function TableEditor() {
   const [tables, setTables] = useState<TableData[]>([]);
@@ -131,6 +130,7 @@ export default function TableEditor() {
       setPendingDate('');
       setShowDateModal(false);
     } catch (error) {
+      console.error(error);
       alert('Не вдалося створити таблицю.');
     }
   }, [pendingDate, tables]);
@@ -213,7 +213,6 @@ export default function TableEditor() {
         purchases={purchases}
         setPurchases={setPurchases}
       />
-      <TableView tables={tables || []} forests={forests || []} />
     </div>
   );
 }

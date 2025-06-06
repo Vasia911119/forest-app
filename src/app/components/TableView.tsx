@@ -1,30 +1,7 @@
-// 'use client';
-
-// import { TableData } from '../types';
-// import TableDisplayList from './TableDisplayList';
-
-// interface TableViewProps {
-//   tables: TableData[];
-//   forests: string[];
-// }
-
-// export default function TableView({ tables = [], forests = [] }: TableViewProps) {
-//   return (
-//     <div className="p-4 sm:p-2">
-//       {tables.length === 0 ? (
-//         <p className="text-center text-gray-500 text-base sm:text-sm md:text-lg">
-//           Немає доступних таблиць для відображення.
-//         </p>
-//       ) : (
-//         <TableDisplayList tables={tables} forests={forests} />
-//       )}
-//     </div>
-//   );
-// }
 'use client';
 
 import { useEffect, useState } from 'react';
-import { TableData } from '../types';
+import type { TableData } from '../types';
 import TableDisplayList from './TableDisplayList';
 
 export default function TableView() {
@@ -47,8 +24,12 @@ export default function TableView() {
         if (!forestsRes.ok) throw new Error('Не вдалося завантажити лісництва');
         const forestsData = await forestsRes.json();
         setForests(forestsData);
-      } catch (error: any) {
-        setError(error.message ?? 'Невідома помилка');
+      } catch (error) {
+        if (error instanceof Error) {
+          setError(error.message ?? 'Невідома помилка');
+        } else {
+          setError('Невідома помилка');
+        }
       } finally {
         setLoading(false);
       }
