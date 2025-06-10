@@ -1,3 +1,4 @@
+'use client';
 import { useState, useCallback } from 'react';
 import DateInput from './DateInput';
 import EditableDataTable from './EditableDataTable';
@@ -63,7 +64,7 @@ export default function TableList({
           ...table,
           rows: updatedRows
         };
-      }
+}
       return table;
     });
     
@@ -80,23 +81,23 @@ export default function TableList({
         const currentRow = updatedRows[rowIndex];
         if (!currentRow) return table;
 
-        const newRow: Row = {
+    const newRow: Row = {
           ...currentRow,
           buyer,
           forest: currentRow.forest,
-          product: '',
-          species: '',
-          volume: 0,
-          amount: 0,
-        };
+      product: '',
+      species: '',
+      volume: 0,
+      amount: 0,
+    };
 
         if (buyer) {
-          const relatedPurchase = purchases.find(p => p.buyer === buyer);
-          if (relatedPurchase) {
-            newRow.product = relatedPurchase.product;
-            newRow.species = relatedPurchase.species;
-            newRow.volume = relatedPurchase.volume;
-            newRow.amount = relatedPurchase.amount;
+      const relatedPurchase = purchases.find(p => p.buyer === buyer);
+      if (relatedPurchase) {
+        newRow.product = relatedPurchase.product;
+        newRow.species = relatedPurchase.species;
+        newRow.volume = relatedPurchase.volume;
+        newRow.amount = relatedPurchase.amount;
           }
         }
 
@@ -130,7 +131,7 @@ export default function TableList({
       if (!isDateUnique) {
         throw new Error('Таблиця з такою датою вже існує');
       }
-
+  
       const newTables = [...tables];
       newTables[tableIdx] = { ...table, date };
       setTables(newTables);
@@ -161,11 +162,11 @@ export default function TableList({
         setTables(newTables);
       }
 
-      debouncedSave({ tables: newTables });
+        debouncedSave({ tables: newTables });
     } catch (error) {
       console.error('Помилка оновлення дати:', error);
       alert(error instanceof Error ? error.message : 'Не вдалося оновити дату');
-    }
+      }
   }, [tables, setTables, debouncedSave]);
 
   const addForest = async () => {
@@ -206,21 +207,21 @@ export default function TableList({
       return;
     }
 
-    setLoadingForest(true);
-    try {
-      const res = await fetch('/api/forests', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: forest }),
-      });
+      setLoadingForest(true);
+      try {
+        const res = await fetch('/api/forests', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: forest }),
+        });
 
       if (!res.ok) {
         throw new Error('Не вдалося видалити лісництво');
       }
 
       setForests(forests.filter(f => f !== forest));
-    } catch (error) {
-      console.error('Помилка видалення лісництва:', error);
+      } catch (error) {
+        console.error('Помилка видалення лісництва:', error);
       alert(error instanceof Error ? error.message : 'Не вдалося видалити лісництво');
     } finally {
       setLoadingForest(false);
@@ -265,21 +266,21 @@ export default function TableList({
       return;
     }
 
-    setLoadingProduct(true);
-    try {
-      const res = await fetch('/api/products', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: product }),
-      });
+      setLoadingProduct(true);
+      try {
+        const res = await fetch('/api/products', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: product }),
+        });
 
       if (!res.ok) {
         throw new Error('Не вдалося видалити продукцію');
       }
 
       setProducts(products.filter(p => p !== product));
-    } catch (error) {
-      console.error('Помилка видалення продукції:', error);
+      } catch (error) {
+        console.error('Помилка видалення продукції:', error);
       alert(error instanceof Error ? error.message : 'Не вдалося видалити продукцію');
     } finally {
       setLoadingProduct(false);
@@ -324,21 +325,21 @@ export default function TableList({
       return;
     }
 
-    setLoadingSpecies(true);
-    try {
-      const res = await fetch('/api/species', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: specie }),
-      });
+      setLoadingSpecies(true);
+      try {
+        const res = await fetch('/api/species', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: specie }),
+        });
 
       if (!res.ok) {
         throw new Error('Не вдалося видалити породу');
       }
 
       setSpecies(species.filter(s => s !== specie));
-    } catch (error) {
-      console.error('Помилка видалення породи:', error);
+      } catch (error) {
+        console.error('Помилка видалення породи:', error);
       alert(error instanceof Error ? error.message : 'Не вдалося видалити породу');
     } finally {
       setLoadingSpecies(false);
@@ -383,7 +384,7 @@ export default function TableList({
       console.error('Помилка додавання покупки:', error);
       alert(error instanceof Error ? error.message : 'Не вдалося додати покупку');
     } finally {
-      setLoadingPurchase(false);
+    setLoadingPurchase(false);
     }
   };
 
@@ -392,13 +393,13 @@ export default function TableList({
       return;
     }
 
-    setLoadingPurchase(true);
-    try {
-      const res = await fetch('/api/purchases', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+      setLoadingPurchase(true);
+      try {
+        const res = await fetch('/api/purchases', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(purchase),
-      });
+        });
 
       if (!res.ok) {
         throw new Error('Не вдалося видалити покупку');
@@ -409,7 +410,7 @@ export default function TableList({
         p.product !== purchase.product || 
         p.species !== purchase.species
       ));
-    } catch (error) {
+      } catch (error) {
       console.error('Помилка видалення покупки:', error);
       alert(error instanceof Error ? error.message : 'Не вдалося видалити покупку');
     } finally {
@@ -423,118 +424,118 @@ export default function TableList({
         <div className="border rounded p-4">
           <h3 className="text-lg font-semibold mb-2">Лісництва</h3>
           <div className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={newForest}
-              onChange={e => setNewForest(e.target.value)}
+                  <input
+                    type="text"
+                    value={newForest}
+                    onChange={e => setNewForest(e.target.value)}
               placeholder="Нова назва"
               className="flex-1 px-2 py-1 border rounded"
-            />
-            <button
-              onClick={addForest}
-              disabled={loadingForest}
+                  />
+                  <button
+                    onClick={addForest}
+                    disabled={loadingForest}
               className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-            >
+                  >
               {loadingForest ? '...' : '+'}
-            </button>
-          </div>
+                  </button>
+                </div>
           <ul className="space-y-1">
             {forests.map(forest => (
               <li key={forest} className="flex justify-between items-center">
-                <span>{forest}</span>
-                <button
-                  onClick={() => deleteForest(forest)}
-                  disabled={loadingForest}
+                      <span>{forest}</span>
+                      <button
+                        onClick={() => deleteForest(forest)}
+                        disabled={loadingForest}
                   className="text-red-500 hover:text-red-700"
-                >
+                      >
                   ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
         <div className="border rounded p-4">
           <h3 className="text-lg font-semibold mb-2">Продукція</h3>
           <div className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={newProduct}
-              onChange={e => setNewProduct(e.target.value)}
+                  <input
+                    type="text"
+                    value={newProduct}
+                    onChange={e => setNewProduct(e.target.value)}
               placeholder="Нова назва"
               className="flex-1 px-2 py-1 border rounded"
-            />
-            <button
-              onClick={addProduct}
-              disabled={loadingProduct}
+                  />
+                  <button
+                    onClick={addProduct}
+                    disabled={loadingProduct}
               className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-            >
+                  >
               {loadingProduct ? '...' : '+'}
-            </button>
-          </div>
+                  </button>
+                </div>
           <ul className="space-y-1">
             {products.map(product => (
               <li key={product} className="flex justify-between items-center">
-                <span>{product}</span>
-                <button
-                  onClick={() => deleteProduct(product)}
-                  disabled={loadingProduct}
+                      <span>{product}</span>
+                      <button
+                        onClick={() => deleteProduct(product)}
+                        disabled={loadingProduct}
                   className="text-red-500 hover:text-red-700"
-                >
+                      >
                   ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
         <div className="border rounded p-4">
           <h3 className="text-lg font-semibold mb-2">Породи</h3>
           <div className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={newSpecies}
-              onChange={e => setNewSpecies(e.target.value)}
+                  <input
+                    type="text"
+                    value={newSpecies}
+                    onChange={e => setNewSpecies(e.target.value)}
               placeholder="Нова назва"
               className="flex-1 px-2 py-1 border rounded"
-            />
-            <button
-              onClick={addSpecies}
-              disabled={loadingSpecies}
+                  />
+                  <button
+                    onClick={addSpecies}
+                    disabled={loadingSpecies}
               className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-            >
+                  >
               {loadingSpecies ? '...' : '+'}
-            </button>
-          </div>
+                  </button>
+                </div>
           <ul className="space-y-1">
             {species.map(specie => (
               <li key={specie} className="flex justify-between items-center">
-                <span>{specie}</span>
-                <button
-                  onClick={() => deleteSpecies(specie)}
-                  disabled={loadingSpecies}
+                      <span>{specie}</span>
+                      <button
+                        onClick={() => deleteSpecies(specie)}
+                        disabled={loadingSpecies}
                   className="text-red-500 hover:text-red-700"
-                >
+                      >
                   ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
         <div className="border rounded p-4">
           <h3 className="text-lg font-semibold mb-2">Покупки</h3>
           <div className="space-y-2 mb-2">
-            <input
-              type="text"
-              value={newPurchase.buyer}
-              onChange={e => setNewPurchase({ ...newPurchase, buyer: e.target.value })}
-              placeholder="Покупець"
+                  <input
+                    type="text"
+                    value={newPurchase.buyer}
+                    onChange={e => setNewPurchase({ ...newPurchase, buyer: e.target.value })}
+                    placeholder="Покупець"
               className="w-full px-2 py-1 border rounded"
-            />
+                  />
             <select
-              value={newPurchase.product}
-              onChange={e => setNewPurchase({ ...newPurchase, product: e.target.value })}
+                    value={newPurchase.product}
+                    onChange={e => setNewPurchase({ ...newPurchase, product: e.target.value })}
               className="w-full px-2 py-1 border rounded"
             >
               <option value="">Оберіть продукцію</option>
@@ -543,8 +544,8 @@ export default function TableList({
               ))}
             </select>
             <select
-              value={newPurchase.species}
-              onChange={e => setNewPurchase({ ...newPurchase, species: e.target.value })}
+                    value={newPurchase.species}
+                    onChange={e => setNewPurchase({ ...newPurchase, species: e.target.value })}
               className="w-full px-2 py-1 border rounded"
             >
               <option value="">Оберіть породу</option>
@@ -552,27 +553,27 @@ export default function TableList({
                 <option key={specie} value={specie}>{specie}</option>
               ))}
             </select>
-            <input
-              type="number"
+                  <input
+                    type="number"
               value={newPurchase.volume || ''}
               onChange={e => setNewPurchase({ ...newPurchase, volume: Number(e.target.value) })}
               placeholder="Об'єм"
               className="w-full px-2 py-1 border rounded"
-            />
-            <input
-              type="number"
+                  />
+                  <input
+                    type="number"
               value={newPurchase.amount || ''}
               onChange={e => setNewPurchase({ ...newPurchase, amount: Number(e.target.value) })}
               placeholder="Сума"
               className="w-full px-2 py-1 border rounded"
-            />
-            <button
-              onClick={addPurchase}
-              disabled={loadingPurchase}
+                  />
+                  <button
+                    onClick={addPurchase}
+                    disabled={loadingPurchase}
               className="w-full px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-            >
+                  >
               {loadingPurchase ? 'Додавання...' : 'Додати покупку'}
-            </button>
+                  </button>
           </div>
           <ul className="space-y-2">
             {purchases.map((purchase, index) => (
@@ -586,18 +587,18 @@ export default function TableList({
                     {purchase.volume} m³ - {purchase.amount} грн
                   </div>
                 </div>
-                <button
-                  onClick={() => deletePurchase(purchase)}
-                  disabled={loadingPurchase}
+                      <button
+                        onClick={() => deletePurchase(purchase)}
+                        disabled={loadingPurchase}
                   className="text-red-500 hover:text-red-700"
-                >
+                      >
                   ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
 
       <div className="space-y-4">
         {tables.map((table, tableIndex) => (
