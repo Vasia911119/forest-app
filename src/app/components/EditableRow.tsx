@@ -1,102 +1,130 @@
-import { memo, useMemo } from 'react';
-import { Row } from '../types';
+import { memo } from 'react';
+import type { ChangeEvent } from 'react';
+import type { Row, Purchase } from '../types';
 
 interface EditableRowProps {
   row: Row;
-  idx: number;
-  handleFieldChange: (index: number, field: keyof Row, value: string | number) => void;
-  handleBuyerChange: (index: number, buyer: string) => void;
-  deleteRow: (id: number) => void;
+  rowIndex: number;
+  tableId: number;
+  handleFieldChange: (field: keyof Row, value: string | number) => void;
+  handleBuyerChange: (buyer: string) => void;
+  deleteRow: (tableId: number, id: number) => Promise<void>;
   forests: string[];
-  purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[];
+  purchases: Purchase[];
   products: string[];
   species: string[];
 }
 
-const EditableRow = memo(({
-  row, idx, handleFieldChange, handleBuyerChange, deleteRow, forests, purchases, products, species
-}: EditableRowProps) => {
-  // Унікальні покупці тільки один раз, мемоізовано
-  const uniqueBuyers = useMemo(
-    () => [...new Set(purchases.map(p => p.buyer))],
-    [purchases]
-  );
+const EditableRow = memo(function EditableRow({
+  row,
+  rowIndex,
+  tableId,
+  handleFieldChange,
+  handleBuyerChange,
+  deleteRow,
+  forests,
+  purchases,
+  products,
+  species,
+}: EditableRowProps) {
+  const handleNumericChange = (field: 'volume' | 'amount', value: string) => {
+    const numValue = value === '' ? 0 : Number(value);
+    if (!isNaN(numValue)) {
+      console.log('Numeric change:', { field, value: numValue, rowIndex, tableId });
+      handleFieldChange(field, numValue);
+    }
+  };
+
+  const handleSelectChange = (field: keyof Row, e: ChangeEvent<HTMLSelectElement>) => {
+    console.log(`${field} change:`, { value: e.target.value, rowIndex, tableId });
+    handleFieldChange(field, e.target.value);
+  };
+
+  if (!row) {
+    return null;
+  }
 
   return (
-    <tr key={`${row.id}-${idx}`}>
-      <td className="border px-2 py-1 sm:px-1 sm:py-0.5">{idx + 1}</td>
-      <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
+    <tr>
+      <td className="px-4 py-2 border">
         <select
-          className="w-full border rounded text-sm sm:text-xs md:text-base"
           value={row.forest}
-          onChange={e => handleFieldChange(idx, 'forest', e.target.value)}
+          onChange={(e) => handleSelectChange('forest', e)}
+          className="w-full p-1 border rounded"
         >
-          <option value="">--</option>
+          <option value="">Виберіть лісництво</option>
           {forests.map(f => (
             <option key={f} value={f}>{f}</option>
           ))}
         </select>
       </td>
-      <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
+      <td className="px-4 py-2 border">
         <select
-          className="w-full border rounded text-sm sm:text-xs md:text-base"
           value={row.buyer}
-          onChange={e => handleBuyerChange(idx, e.target.value)}
+          onChange={(e) => {
+            console.log('Buyer change:', { value: e.target.value, rowIndex, tableId });
+            handleBuyerChange(e.target.value);
+          }}
+          className="w-full p-1 border rounded"
         >
-          <option value="">--</option>
-          {uniqueBuyers.map(buyer => (
-            <option key={buyer} value={buyer}>{buyer}</option>
+          <option value="">Виберіть покупця</option>
+          {purchases.map(p => (
+            <option key={p.buyer} value={p.buyer}>{p.buyer}</option>
           ))}
         </select>
       </td>
-      <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
+      <td className="px-4 py-2 border">
         <select
-          className="w-full border rounded text-sm sm:text-xs md:text-base"
           value={row.product}
-          onChange={e => handleFieldChange(idx, 'product', e.target.value)}
+          onChange={(e) => handleSelectChange('product', e)}
+          className="w-full p-1 border rounded"
         >
-          <option value="">--</option>
+          <option value="">Виберіть продукцію</option>
           {products.map(p => (
             <option key={p} value={p}>{p}</option>
           ))}
         </select>
       </td>
-      <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
+      <td className="px-4 py-2 border">
         <select
-          className="w-full border rounded text-sm sm:text-xs md:text-base"
           value={row.species}
-          onChange={e => handleFieldChange(idx, 'species', e.target.value)}
+          onChange={(e) => handleSelectChange('species', e)}
+          className="w-full p-1 border rounded"
         >
-          <option value="">--</option>
+          <option value="">Виберіть породу</option>
           {species.map(s => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
       </td>
-      <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
+      <td className="px-4 py-2 border">
         <input
           type="number"
-          value={Math.round(row.volume)}
-          onChange={e => handleFieldChange(idx, 'volume', parseInt(e.target.value) || 0)}
-          className="w-full border rounded px-2 py-1 text-sm sm:text-xs md:text-base"
+          value={row.volume}
+          onChange={(e) => handleNumericChange('volume', e.target.value)}
+          className="w-full p-1 border rounded"
           min="0"
-          step="1"
         />
       </td>
-      <td className="border px-2 py-1 sm:px-1 sm:py-0.5">
+      <td className="px-4 py-2 border">
         <input
           type="number"
-          value={Math.round(row.amount)}
-          onChange={e => handleFieldChange(idx, 'amount', parseInt(e.target.value) || 0)}
-          className="w-full border rounded px-2 py-1 text-sm sm:text-xs md:text-base"
+          value={row.amount}
+          onChange={(e) => handleNumericChange('amount', e.target.value)}
+          className="w-full p-1 border rounded"
           min="0"
-          step="1"
         />
       </td>
-      <td className="border px-2 py-1 text-center sm:px-1 sm:py-0.5">
+      <td className="px-4 py-2 border">
         <button
+          onClick={() => {
+            console.log('Delete row clicked:', { tableId, rowId: row.id, row, tableIdType: typeof tableId, rowIdType: typeof row.id });
+            if (row.id) {
+              deleteRow(tableId, row.id);
+            }
+          }}
           className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
-          onClick={() => deleteRow(row.id)}
+          disabled={!row.id}
           title="Видалити рядок"
           aria-label="Видалити рядок"
           type="button"
@@ -109,6 +137,5 @@ const EditableRow = memo(({
     </tr>
   );
 });
-EditableRow.displayName = 'EditableRow';
 
 export default EditableRow;

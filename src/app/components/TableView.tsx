@@ -1,54 +1,52 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { TableData } from '../types';
 import TableDisplayList from './TableDisplayList';
 
 export default function TableView() {
   const [tables, setTables] = useState<TableData[]>([]);
-  const [forests, setForests] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
+  const fetchData = useCallback(async () => {
+    try {
       setLoading(true);
       setError(null);
-      try {
-        const tablesRes = await fetch('/api/tables');
-        if (!tablesRes.ok) throw new Error('Не вдалося завантажити таблиці');
-        const tablesData = await tablesRes.json();
-        setTables(tablesData);
-
-        const forestsRes = await fetch('/api/forests');
-        if (!forestsRes.ok) throw new Error('Не вдалося завантажити лісництва');
-        const forestsData = await forestsRes.json();
-        setForests(forestsData);
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message ?? 'Невідома помилка');
-        } else {
-          setError('Невідома помилка');
-        }
-      } finally {
-        setLoading(false);
+      const res = await fetch('/api/tables');
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Не вдалося завантажити дані: ${errorText}`);
       }
-    };
-
-    loadData();
+      const data = await res.json();
+      setTables(Array.isArray(data.tables) ? data.tables : []);
+    } catch (err) {
+      console.error('Помилка завантаження даних:', err);
+      setError(err instanceof Error ? err.message : 'Невідома помилка');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   if (loading) {
-    return <div className="p-4 sm:p-2 text-center text-gray-500">Завантаження...</div>;
+    return (
+      <div className="text-center text-gray-500 my-4">
+        Завантаження...
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="p-4 sm:p-2 text-center text-red-500">
-        {error}
+      <div className="text-center text-red-500 my-4">
+        <p>Помилка: {error}</p>
         <button
-          onClick={() => window.location.reload()}
-          className="ml-4 px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600"
+          onClick={() => fetchData()}
+          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           type="button"
         >
           Спробувати ще раз
@@ -58,13 +56,13 @@ export default function TableView() {
   }
 
   return (
-    <div className="p-4 sm:p-2">
+    <div className="container mx-auto px-4">
       {tables.length === 0 ? (
-        <p className="text-center text-gray-500 text-base sm:text-sm md:text-lg">
-          Немає доступних таблиць для відображення.
+        <p className="text-center text-gray-500 my-4">
+          Немає таблиць для відображення
         </p>
       ) : (
-        <TableDisplayList tables={tables} forests={forests} />
+        <TableDisplayList tables={tables} />
       )}
     </div>
   );

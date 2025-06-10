@@ -1,12 +1,11 @@
+import './globals.css';
 import type { Metadata } from "next";
-import "./globals.css";
+import Navbar from './components/Navbar';
 
 export const metadata: Metadata = {
   title: "Forest App",
   description: "Система обліку лісопродукції",
 };
-
-import Navbar from './components/Navbar';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

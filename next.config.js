@@ -1,24 +1,24 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   // TypeScript строгість
   typescript: {
-    tsconfigPath: './tsconfig.json',
+    // Включаємо строгий режим TypeScript
+    strict: true,
   },
 
   // ESLint конфігурація
   eslint: {
-    dirs: ['src'],
+    dirs: ["src"],
   },
 
   // Експериментальні функції
   experimental: {
-    optimizePackageImports: ['lodash', 'chart.js'],
+    optimizePackageImports: ["lodash", "chart.js"],
     turbo: {
       rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
+        "*.svg": {
+          loaders: ["@svgr/webpack"],
+          as: "*.js",
         },
       },
     },
@@ -26,12 +26,12 @@ const nextConfig: NextConfig = {
 
   // Оптимізація зображень
   images: {
-    formats: ['image/webp', 'image/avif'],
+    formats: ["image/webp", "image/avif"],
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'aawcrghnjzsmklebgdcw.supabase.co',
-        pathname: '/storage/v1/object/public/**',
+        protocol: "https",
+        hostname: "aawcrghnjzsmklebgdcw.supabase.co",
+        pathname: "/storage/v1/object/public/**",
       },
     ],
   },
@@ -40,19 +40,19 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'DENY',
+            key: "X-Frame-Options",
+            value: "DENY",
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            key: "Referrer-Policy",
+            value: "origin-when-cross-origin",
           },
         ],
       },
@@ -63,8 +63,8 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: '/home',
-        destination: '/',
+        source: "/home",
+        destination: "/",
         permanent: true,
       },
     ];
@@ -85,7 +85,7 @@ const nextConfig: NextConfig = {
     // Зменшення розміру lodash
     config.resolve.alias = {
       ...config.resolve.alias,
-      'lodash': 'lodash-es',
+      lodash: "lodash-es",
     };
 
     return config;
@@ -94,7 +94,7 @@ const nextConfig: NextConfig = {
   // Налаштування для продакшену
   compress: true,
   poweredByHeader: false,
-  
+
   // Логування
   logging: {
     fetches: {
@@ -103,4 +103,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

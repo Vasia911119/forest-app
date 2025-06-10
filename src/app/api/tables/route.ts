@@ -1,144 +1,179 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import type { TableData } from '@/app/types';
 
-export async function GET() {
+interface TablesResponse {
+  tables?: TableData[];
+  error?: string;
+}
+
+/**
+ * Отримання всіх таблиць з рядками
+ */
+export async function GET(): Promise<NextResponse<TablesResponse>> {
   try {
     const supabase = await createClient();
-
-    const { data: tablesData, error: tablesError } = await supabase
+    const { data: tables, error: tablesError } = await supabase
       .from('tables')
       .select('id, date')
       .order('id');
-    if (tablesError) throw tablesError;
 
-    const { data: rowsData, error: rowsError } = await supabase
+    if (tablesError) {
+      console.error('Помилка отримання таблиць:', tablesError);
+      return NextResponse.json({ error: tablesError.message }, { status: 500 });
+    }
+
+    const { data: rows, error: rowsError } = await supabase
       .from('rows')
       .select('*');
-    if (rowsError) throw rowsError;
 
-    const tables = tablesData.map(table => ({
-      id: table.id,
-      date: table.date,
-      rows: rowsData
-        .filter(row => row.table_id === table.id)
-        .map(row => ({
-          id: row.id,
+    if (rowsError) {
+      console.error('Помилка отримання рядків:', rowsError);
+      return NextResponse.json({ error: rowsError.message }, { status: 500 });
+    }
+
+    const tablesWithRows = tables.map(table => ({
+      ...table,
+      rows: rows.filter(row => row.table_id === table.id)
+    }));
+
+    return NextResponse.json({ tables: tablesWithRows });
+  } catch (error) {
+    console.error('Помилка обробки запиту:', error);
+    return NextResponse.json(
+      { error: 'Внутрішня помилка сервера' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Оновлення таблиць та їх рядків
+ */
+export async function POST(request: Request): Promise<NextResponse<TablesResponse>> {
+  try {
+    const { tables } = await request.json() as { tables: TableData[] };
+    const supabase = await createClient();
+
+    for (const table of tables) {
+      // Оновлюємо таблицю
+      const { error: tableError } = await supabase
+          .from('tables')
+          .update({ date: table.date })
+        .eq('id', table.id);
+
+      if (tableError) {
+        console.error('Помилка оновлення таблиці:', tableError);
+        return NextResponse.json({ error: tableError.message }, { status: 500 });
+      }
+
+      // Отримуємо поточні id рядків
+      const { data: existingRows, error: existingRowsError } = await supabase
+        .from('rows')
+        .select('id')
+        .eq('table_id', table.id);
+
+      if (existingRowsError) {
+        console.error('Помилка отримання існуючих рядків:', existingRowsError);
+        return NextResponse.json({ error: existingRowsError.message }, { status: 500 });
+      }
+
+      const existingRowIds = existingRows?.map(row => row.id) || [];
+
+      // Видаляємо рядки, яких немає в нових даних
+      if (existingRowIds.length > 0) {
+      const newRowIds = table.rows
+          .filter(row => row.id)
+          .map(row => row.id);
+      const rowsToDelete = existingRowIds.filter(id => !newRowIds.includes(id));
+
+      if (rowsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('rows')
+          .delete()
+            .eq('table_id', table.id)
+          .in('id', rowsToDelete);
+
+          if (deleteError) {
+            console.error('Помилка видалення рядків:', deleteError);
+            return NextResponse.json({ error: deleteError.message }, { status: 500 });
+          }
+        }
+      }
+
+      // Оновлюємо або додаємо нові рядки
+      for (const row of table.rows) {
+        const rowData = {
+          table_id: table.id,
           forest: row.forest,
           buyer: row.buyer,
           product: row.product,
           species: row.species,
           volume: row.volume,
-          amount: row.amount,
-        })),
+          amount: row.amount
+        };
+
+        if (row.id) {
+          // Оновлюємо існуючий рядок
+          const { error: updateError } = await supabase
+            .from('rows')
+            .update(rowData)
+            .eq('id', row.id);
+
+          if (updateError) {
+            console.error('Помилка оновлення рядка:', updateError);
+            return NextResponse.json({ error: updateError.message }, { status: 500 });
+          }
+        } else {
+          // Додаємо новий рядок
+          const { data: newRow, error: insertError } = await supabase
+          .from('rows')
+            .insert(rowData)
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error('Помилка додавання рядка:', insertError);
+            return NextResponse.json({ error: insertError.message }, { status: 500 });
+      }
+
+          // Оновлюємо id в локальному стані
+          row.id = newRow.id;
+        }
+      }
+    }
+
+    // Повертаємо оновлені дані
+    const { data: updatedTables, error: fetchError } = await supabase
+      .from('tables')
+      .select('id, date')
+      .order('id');
+
+    if (fetchError) {
+      console.error('Помилка отримання оновлених таблиць:', fetchError);
+      return NextResponse.json({ error: fetchError.message }, { status: 500 });
+    }
+
+    const { data: updatedRows, error: rowsError } = await supabase
+          .from('rows')
+      .select('*');
+
+    if (rowsError) {
+      console.error('Помилка отримання оновлених рядків:', rowsError);
+      return NextResponse.json({ error: rowsError.message }, { status: 500 });
+    }
+
+    const tablesWithRows = updatedTables.map(table => ({
+      ...table,
+      rows: updatedRows.filter(row => row.table_id === table.id)
     }));
 
-    return NextResponse.json(tables);
+    return NextResponse.json({ tables: tablesWithRows });
   } catch (error) {
-    console.error('Помилка завантаження таблиць:', error);
-    return NextResponse.json({ error: 'Не вдалося завантажити таблиці' }, { status: 500 });
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const { tables } = await request.json();
-
-    if (!tables || !Array.isArray(tables)) {
-      return NextResponse.json({ error: 'Очікується масив tables' }, { status: 400 });
-    }
-
-    const supabase = await createClient();
-
-    for (const table of tables) {
-      let tableId = table.id;
-
-      // Створення нової таблиці, якщо id не заданий
-      if (typeof tableId !== 'number') {
-        if (!table.date) continue;
-        const { data: inserted, error: insertError } = await supabase
-          .from('tables')
-          .insert({ date: table.date })
-          .select('id')
-          .single();
-        if (insertError) throw insertError;
-        tableId = inserted.id;
-      } else {
-        // Оновлення дати
-        const { error: updateTableError } = await supabase
-          .from('tables')
-          .update({ date: table.date })
-          .eq('id', tableId);
-        if (updateTableError) throw updateTableError;
-      }
-
-      // Отримання існуючих рядків
-      const { data: existingRows, error: fetchRowsError } = await supabase
-        .from('rows')
-        .select('id')
-        .eq('table_id', tableId);
-      if (fetchRowsError) throw fetchRowsError;
-
-      const existingRowIds = existingRows.map(r => r.id);
-      const newRowIds = table.rows
-        .map(r => r.id)
-        .filter((id): id is number => typeof id === 'number');
-      const rowsToDelete = existingRowIds.filter(id => !newRowIds.includes(id));
-
-      // Видалення рядків, які були видалені на фронті
-      if (rowsToDelete.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('rows')
-          .delete()
-          .eq('table_id', tableId)
-          .in('id', rowsToDelete);
-        if (deleteError) throw deleteError;
-      }
-
-      // Додавання нових рядків
-      const rowsToInsert = table.rows
-        .filter(r => r.id === undefined || r.id === null)
-        .map(r => ({
-          table_id: tableId,
-          forest: r.forest,
-          buyer: r.buyer,
-          product: r.product,
-          species: r.species,
-          volume: r.volume ?? 0,
-          amount: r.amount ?? 0,
-        }));
-
-      // Оновлення існуючих рядків
-      const rowsToUpdate = table.rows
-        .filter(r => typeof r.id === 'number' && existingRowIds.includes(r.id))
-        .map(r => ({
-          id: r.id,
-          table_id: tableId,
-          forest: r.forest,
-          buyer: r.buyer,
-          product: r.product,
-          species: r.species,
-          volume: r.volume ?? 0,
-          amount: r.amount ?? 0,
-        }));
-
-      if (rowsToInsert.length > 0) {
-        const { error: insertError } = await supabase
-          .from('rows')
-          .insert(rowsToInsert);
-        if (insertError) throw insertError;
-      }
-
-      if (rowsToUpdate.length > 0) {
-        const { error: updateRowsError } = await supabase
-          .from('rows')
-          .upsert(rowsToUpdate, { onConflict: 'id' });
-        if (updateRowsError) throw updateRowsError;
-      }
-    }
-
-    return NextResponse.json({ message: 'Таблиці оновлено' }, { status: 200 });
-  } catch (error) {
-    console.error('Помилка оновлення таблиць:', error);
-    return NextResponse.json({ error: 'Не вдалося оновити таблиці' }, { status: 500 });
+    console.error('Помилка обробки запиту:', error);
+    return NextResponse.json(
+      { error: 'Внутрішня помилка сервера' },
+      { status: 500 }
+    );
   }
 }

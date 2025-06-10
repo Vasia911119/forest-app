@@ -1,32 +1,23 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import DateInput from './DateInput';
 import EditableDataTable from './EditableDataTable';
-import AddRowButton from './AddRowButton';
-import type { Row, TableData } from '../types';
+import type { Row, TableData, Purchase } from '../types';
 
 interface TableListProps {
   tables: TableData[];
   setTables: (tables: TableData[]) => void;
   debouncedSave: (data: { tables: TableData[] }) => void;
-  deleteTable: (tableId: number) => void;
-  forests: (string | { name: string })[];
+  deleteTable: (id: number) => void;
+  deleteRow: (tableId: number, rowId: number) => Promise<void>;
+  addRow: (tableId: number) => Promise<void>;
+  forests: string[];
   setForests: (forests: string[]) => void;
-  products: (string | { name: string })[];
+  products: string[];
   setProducts: (products: string[]) => void;
-  species: (string | { name: string })[];
+  species: string[];
   setSpecies: (species: string[]) => void;
-  purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[];
-  setPurchases: (purchases: { buyer: string; product: string; species: string; volume: number; amount: number }[]) => void;
-}
-
-function getTableKey(table: TableData) {
-  if (table.id === undefined || table.id === null) {
-    if (!table._tmpId) {
-      table._tmpId = `tmp-${Date.now()}-${Math.random()}`;
-    }
-    return table._tmpId;
-  }
-  return `table-${table.id}`;
+  purchases: Purchase[];
+  setPurchases: (purchases: Purchase[]) => void;
 }
 
 export default function TableList({
@@ -34,6 +25,8 @@ export default function TableList({
   setTables,
   debouncedSave,
   deleteTable,
+  deleteRow,
+  addRow,
   forests,
   setForests,
   products,
@@ -46,179 +39,146 @@ export default function TableList({
   const [newForest, setNewForest] = useState('');
   const [newProduct, setNewProduct] = useState('');
   const [newSpecies, setNewSpecies] = useState('');
-  const [newPurchase, setNewPurchase] = useState({ buyer: '', product: '', species: '', volume: 0, amount: 0 });
-  const [isManageOpen, setIsManageOpen] = useState(false);
+  const [newPurchase, setNewPurchase] = useState<Purchase>({ buyer: '', product: '', species: '', volume: 0, amount: 0 });
 
   const [loadingForest, setLoadingForest] = useState(false);
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [loadingSpecies, setLoadingSpecies] = useState(false);
   const [loadingPurchase, setLoadingPurchase] = useState(false);
 
-  const mappedForests = useMemo(() => forests.map(f => (typeof f === 'string' ? f : f.name || '')), [forests]);
-  const mappedProducts = useMemo(() => products.map(p => (typeof p === 'string' ? p : p.name || '')), [products]);
-  const mappedSpecies = useMemo(() => species.map(s => (typeof s === 'string' ? s : s.name || '')), [species]);
+  const handleFieldChange = useCallback((tableId: number, rowIndex: number, field: keyof Row, value: string | number) => {
+    console.log('TableList.handleFieldChange:', { tableId, rowIndex, field, value });
+    
+    const updatedTables = tables.map(table => {
+      if (table.id === tableId) {
+        const updatedRows = [...table.rows];
+        const currentRow = updatedRows[rowIndex];
+        if (!currentRow) return table;
 
-  const addRow = async (tableIdx: number) => {
-    const table = tables[tableIdx];
-      if (!table || !table.date) {
-      alert('Будь ласка, спочатку введіть дату для цієї таблиці.');
-  return;
-}
+        updatedRows[rowIndex] = {
+          ...currentRow,
+          [field]: value
+        };
+        return {
+          ...table,
+          rows: updatedRows
+        };
+      }
+      return table;
+    });
+    
+    setTables(updatedTables);
+    debouncedSave({ tables: updatedTables });
+  }, [tables, debouncedSave, setTables]);
 
-    let currentTable = table;
-    if (!currentTable.id) {
-      try {
+  const handleBuyerChange = useCallback((tableId: number, rowIndex: number, buyer: string) => {
+    console.log('TableList.handleBuyerChange:', { tableId, rowIndex, buyer });
+    
+    const updatedTables = tables.map(table => {
+      if (table.id === tableId) {
+        const updatedRows = [...table.rows];
+        const currentRow = updatedRows[rowIndex];
+        if (!currentRow) return table;
+
+        const newRow: Row = {
+          ...currentRow,
+          buyer,
+          forest: currentRow.forest,
+          product: '',
+          species: '',
+          volume: 0,
+          amount: 0,
+        };
+
+        if (buyer) {
+          const relatedPurchase = purchases.find(p => p.buyer === buyer);
+          if (relatedPurchase) {
+            newRow.product = relatedPurchase.product;
+            newRow.species = relatedPurchase.species;
+            newRow.volume = relatedPurchase.volume;
+            newRow.amount = relatedPurchase.amount;
+          }
+        }
+
+        updatedRows[rowIndex] = newRow;
+        return {
+          ...table,
+          rows: updatedRows
+        };
+      }
+      return table;
+    });
+    
+    setTables(updatedTables);
+    debouncedSave({ tables: updatedTables });
+  }, [tables, purchases, debouncedSave, setTables]);
+
+  const setDate = useCallback(async (tableIdx: number, date: string) => {
+    if (!date) {
+      alert('Будь ласка, вкажіть дату');
+      return;
+    }
+
+    try {
+      const table = tables[tableIdx];
+      if (!table) {
+        throw new Error('Таблиця не знайдена');
+      }
+
+      // Перевіряємо чи дата унікальна
+      const isDateUnique = !tables.some((t, idx) => idx !== tableIdx && t.date === date);
+      if (!isDateUnique) {
+        throw new Error('Таблиця з такою датою вже існує');
+      }
+
+      const newTables = [...tables];
+      newTables[tableIdx] = { ...table, date };
+      setTables(newTables);
+
+      if (table.id) {
+        const res = await fetch('/api/tables/update', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: table.id, date }),
+        });
+
+        if (!res.ok) {
+          throw new Error('Не вдалося оновити дату таблиці');
+        }
+      } else {
         const res = await fetch('/api/tables/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date: currentTable.date }),
+          body: JSON.stringify({ date }),
         });
-        if (!res.ok) throw new Error('Не вдалося створити таблицю');
-        const { id } = await res.json();
-        currentTable = { ...currentTable, id };
-        const newTables = [...tables];
-        newTables[tableIdx] = currentTable;
+
+        if (!res.ok) {
+          throw new Error('Не вдалося створити таблицю');
+        }
+
+        const data = await res.json();
+        newTables[tableIdx] = { ...newTables[tableIdx], id: data.id };
         setTables(newTables);
-      } catch (error) {
-        console.error('Помилка створення таблиці:', error);
-        alert('Не вдалося створити таблицю.');
-        return;
       }
-    }
 
-    const newRow: Row = {
-      forest: '',
-      buyer: '',
-      product: '',
-      species: '',
-      volume: 0,
-      amount: 0,
-    };
-    const newTables = [...tables];
-    newTables[tableIdx] = { ...currentTable, rows: [...currentTable.rows, newRow] };
-    setTables(newTables);
-    debouncedSave({ tables: newTables });
-  };
-
-  const deleteRow = async (tableIdx: number, rowId?: number) => {
-    if (!rowId) {
-      alert('Цей рядок ще не збережений у базі або вже видалений.');
-      return;
-    }
-    try {
-      const table = tables[tableIdx];
-      if (!table || !table.id) {
-        alert('Таблиця не збережена в базі даних. Спочатку збережіть таблицю.');
-        return;
-      }
-      const res = await fetch('/api/tables/delete-row', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableId: table.id, rowId }),
-      });
-      if (!res.ok) throw new Error('Не вдалося видалити рядок');
-  
-      const newTables = [...tables];
-      if (!newTables[tableIdx]?.rows) return;
-      newTables[tableIdx].rows = newTables[tableIdx].rows.filter(row => row.id !== rowId);
-      setTables(newTables);
       debouncedSave({ tables: newTables });
     } catch (error) {
-      console.error('Помилка видалення рядка:', error);
-      alert('Не вдалося видалити рядок.');
+      console.error('Помилка оновлення дати:', error);
+      alert(error instanceof Error ? error.message : 'Не вдалося оновити дату');
     }
-  };
+  }, [tables, setTables, debouncedSave]);
 
-  const handleFieldChange = (tableIdx: number, rowIdx: number, field: keyof Row, value: string | number) => {
-    const newTables = [...tables];
-    if (!newTables[tableIdx] || !newTables[tableIdx].rows[rowIdx]) return;
-    (newTables[tableIdx].rows[rowIdx][field] as string | number) = value;
-    setTables(newTables);
-    debouncedSave({ tables: newTables });
-  };
-
-  const handleBuyerChange = (tableIdx: number, rowIdx: number, buyer: string) => {
-    const newTables = [...tables];
-    if (!newTables[tableIdx] || !newTables[tableIdx].rows[rowIdx]) return;
-    const newRow = { ...newTables[tableIdx].rows[rowIdx], buyer };
-
-    if (!buyer) {
-      newRow.product = '';
-      newRow.species = '';
-      newRow.volume = 0;
-      newRow.amount = 0;
-    } else {
-      const relatedPurchase = purchases.find(p => p.buyer === buyer);
-      if (relatedPurchase) {
-        newRow.product = relatedPurchase.product;
-        newRow.species = relatedPurchase.species;
-        newRow.volume = relatedPurchase.volume;
-        newRow.amount = relatedPurchase.amount;
-      } else {
-        newRow.product = '';
-        newRow.species = '';
-        newRow.volume = 0;
-        newRow.amount = 0;
-      }
-    }
-    newTables[tableIdx].rows[rowIdx] = newRow;
-    setTables(newTables);
-    debouncedSave({ tables: newTables });
-  };
-
-  const setDate = useCallback(
-    (tableIdx: number, newDate: string) => {
-      // Перевірка унікальності дати серед інших таблиць
-      if (tables.some((t, idx) => t.date === newDate && idx !== tableIdx)) {
-        alert('Таблиця з такою датою вже існує!');
-        return;
-      }
-  
-      const newTables = [...tables];
-      let currentTable = newTables[tableIdx];
-      
-      if (!currentTable) return;
-      if (!currentTable.id) {
-        fetch('/api/tables/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date: newDate }),
-        })
-          .then(res => {
-            if (!res.ok) throw new Error('Не вдалося створити таблицю');
-            return res.json();
-          })
-          .then(({ id }) => {
-            if (!currentTable) return;
-            currentTable = { ...currentTable, id, date: newDate };
-            newTables[tableIdx] = currentTable;
-            setTables(newTables);
-            debouncedSave({ tables: newTables });
-          })
-          .catch(error => {
-            console.error('Помилка створення таблиці:', error);
-            alert('Не вдалося створити таблицю.');
-          });
-      } else {
-        currentTable.date = newDate;
-        newTables[tableIdx] = currentTable;
-        setTables(newTables);
-        debouncedSave({ tables: newTables });
-      }
-    },
-    [tables, setTables, debouncedSave]
-  );
-
-  // Forests CRUD
   const addForest = async () => {
     if (!newForest.trim()) {
-      alert('Будь ласка, введіть назву лісництва.');
+      alert('Будь ласка, введіть назву лісництва');
       return;
     }
-    if (mappedForests.includes(newForest.trim())) {
-      alert('Це лісництво вже існує.');
+
+    if (forests.includes(newForest.trim())) {
+      alert('Таке лісництво вже існує');
       return;
     }
+
     setLoadingForest(true);
     try {
       const res = await fetch('/api/forests', {
@@ -226,52 +186,58 @@ export default function TableList({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newForest.trim() }),
       });
-      if (!res.ok) throw new Error('Не вдалося додати лісництво');
-      const updatedForests = [...mappedForests, newForest.trim()];
-      setForests(updatedForests);
+
+      if (!res.ok) {
+        throw new Error('Не вдалося додати лісництво');
+      }
+
+      setForests([...forests, newForest.trim()]);
       setNewForest('');
     } catch (error) {
       console.error('Помилка додавання лісництва:', error);
-      alert('Не вдалося додати лісництво.');
-    }
-    setLoadingForest(false);
-  };
-
-  const deleteForest = async (forest: string) => {
-    const isUsed = tables.some(table => table.rows.some(row => row.forest === forest));
-    if (isUsed) {
-      alert('Це лісництво використовується в таблиці. Видаліть відповідні рядки перед видаленням.');
-      return;
-    }
-    if (confirm(`Ви впевнені, що хочете видалити лісництво "${forest}"?`)) {
-      setLoadingForest(true);
-      try {
-        const res = await fetch('/api/forests', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: forest }),
-        });
-        if (!res.ok) throw new Error('Не вдалося видалити лісництво');
-        const updatedForests = mappedForests.filter(f => f !== forest);
-        setForests(updatedForests);
-      } catch (error) {
-        console.error('Помилка видалення лісництва:', error);
-        alert('Не вдалося видалити лісництво.');
-      }
+      alert(error instanceof Error ? error.message : 'Не вдалося додати лісництво');
+    } finally {
       setLoadingForest(false);
     }
   };
 
-  // Products CRUD
+  const deleteForest = async (forest: string) => {
+    if (!confirm(`Ви впевнені, що хочете видалити лісництво "${forest}"?`)) {
+      return;
+    }
+
+    setLoadingForest(true);
+    try {
+      const res = await fetch('/api/forests', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: forest }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Не вдалося видалити лісництво');
+      }
+
+      setForests(forests.filter(f => f !== forest));
+    } catch (error) {
+      console.error('Помилка видалення лісництва:', error);
+      alert(error instanceof Error ? error.message : 'Не вдалося видалити лісництво');
+    } finally {
+      setLoadingForest(false);
+    }
+  };
+
   const addProduct = async () => {
     if (!newProduct.trim()) {
-      alert('Будь ласка, введіть назву продукції.');
+      alert('Будь ласка, введіть назву продукції');
       return;
     }
-    if (mappedProducts.includes(newProduct.trim())) {
-      alert('Ця продукція вже існує.');
+
+    if (products.includes(newProduct.trim())) {
+      alert('Така продукція вже існує');
       return;
     }
+
     setLoadingProduct(true);
     try {
       const res = await fetch('/api/products', {
@@ -279,54 +245,58 @@ export default function TableList({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newProduct.trim() }),
       });
-      if (!res.ok) throw new Error('Не вдалося додати продукцію');
-      const updatedProducts = [...mappedProducts, newProduct.trim()];
-      setProducts(updatedProducts);
+
+      if (!res.ok) {
+        throw new Error('Не вдалося додати продукцію');
+      }
+
+      setProducts([...products, newProduct.trim()]);
       setNewProduct('');
     } catch (error) {
       console.error('Помилка додавання продукції:', error);
-      alert('Не вдалося додати продукцію.');
-    }
-    setLoadingProduct(false);
-  };
-
-  const deleteProduct = async (product: string) => {
-    const isUsed =
-      tables.some(table => table.rows.some(row => row.product === product)) ||
-      purchases.some(purchase => purchase.product === product);
-    if (isUsed) {
-      alert('Ця продукція використовується в таблиці або в інформації про покупку. Видаліть відповідні записи перед видаленням.');
-      return;
-    }
-    if (confirm(`Ви впевнені, що хочете видалити продукцію "${product}"?`)) {
-      setLoadingProduct(true);
-      try {
-        const res = await fetch('/api/products', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: product }),
-        });
-        if (!res.ok) throw new Error('Не вдалося видалити продукцію');
-        const updatedProducts = mappedProducts.filter(p => p !== product);
-        setProducts(updatedProducts);
-      } catch (error) {
-        console.error('Помилка видалення продукції:', error);
-        alert('Не вдалося видалити продукцію.');
-      }
+      alert(error instanceof Error ? error.message : 'Не вдалося додати продукцію');
+    } finally {
       setLoadingProduct(false);
     }
   };
 
-  // Species CRUD
+  const deleteProduct = async (product: string) => {
+    if (!confirm(`Ви впевнені, що хочете видалити продукцію "${product}"?`)) {
+      return;
+    }
+
+    setLoadingProduct(true);
+    try {
+      const res = await fetch('/api/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: product }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Не вдалося видалити продукцію');
+      }
+
+      setProducts(products.filter(p => p !== product));
+    } catch (error) {
+      console.error('Помилка видалення продукції:', error);
+      alert(error instanceof Error ? error.message : 'Не вдалося видалити продукцію');
+    } finally {
+      setLoadingProduct(false);
+    }
+  };
+
   const addSpecies = async () => {
     if (!newSpecies.trim()) {
-      alert('Будь ласка, введіть породу.');
+      alert('Будь ласка, введіть назву породи');
       return;
     }
-    if (mappedSpecies.includes(newSpecies.trim())) {
-      alert('Ця порода вже існує.');
+
+    if (species.includes(newSpecies.trim())) {
+      alert('Така порода вже існує');
       return;
     }
+
     setLoadingSpecies(true);
     try {
       const res = await fetch('/api/species', {
@@ -334,383 +304,350 @@ export default function TableList({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newSpecies.trim() }),
       });
-      if (!res.ok) throw new Error('Не вдалося додати породу');
-      const updatedSpecies = [...mappedSpecies, newSpecies.trim()];
-      setSpecies(updatedSpecies);
+
+      if (!res.ok) {
+        throw new Error('Не вдалося додати породу');
+      }
+
+      setSpecies([...species, newSpecies.trim()]);
       setNewSpecies('');
     } catch (error) {
       console.error('Помилка додавання породи:', error);
-      alert('Не вдалося додати породу.');
-    }
-    setLoadingSpecies(false);
-  };
-
-  const deleteSpecies = async (specie: string) => {
-    const isUsed =
-      tables.some(table => table.rows.some(row => row.species === specie)) ||
-      purchases.some(purchase => purchase.species === specie);
-    if (isUsed) {
-      alert('Ця порода використовується в таблиці або в інформації про покупку. Видаліть відповідні записи перед видаленням.');
-      return;
-    }
-    if (confirm(`Ви впевнені, що хочете видалити породу "${specie}"?`)) {
-      setLoadingSpecies(true);
-      try {
-        const res = await fetch('/api/species', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: specie }),
-        });
-        if (!res.ok) throw new Error('Не вдалося видалити породу');
-        const updatedSpecies = mappedSpecies.filter(s => s !== specie);
-        setSpecies(updatedSpecies);
-      } catch (error) {
-        console.error('Помилка видалення породи:', error);
-        alert('Не вдалося видалити породу.');
-      }
+      alert(error instanceof Error ? error.message : 'Не вдалося додати породу');
+    } finally {
       setLoadingSpecies(false);
     }
   };
 
-  // Purchases CRUD
+  const deleteSpecies = async (specie: string) => {
+    if (!confirm(`Ви впевнені, що хочете видалити породу "${specie}"?`)) {
+      return;
+    }
+
+    setLoadingSpecies(true);
+    try {
+      const res = await fetch('/api/species', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: specie }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Не вдалося видалити породу');
+      }
+
+      setSpecies(species.filter(s => s !== specie));
+    } catch (error) {
+      console.error('Помилка видалення породи:', error);
+      alert(error instanceof Error ? error.message : 'Не вдалося видалити породу');
+    } finally {
+      setLoadingSpecies(false);
+    }
+  };
+
   const addPurchase = async () => {
-    if (
-      !newPurchase.buyer.trim() ||
-      !newPurchase.product.trim() ||
-      !newPurchase.species.trim() ||
-      newPurchase.volume <= 0 ||
-      newPurchase.amount <= 0
-    ) {
-      alert('Будь ласка, заповніть усі поля для інформації про покупку.');
+    if (!newPurchase.buyer.trim() || !newPurchase.product.trim() || !newPurchase.species.trim()) {
+      alert('Будь ласка, заповніть всі поля');
       return;
     }
-    if (
-      purchases.some(
-        p =>
-          p.buyer === newPurchase.buyer &&
-          p.product === newPurchase.product &&
-          p.species === newPurchase.species
-      )
-    ) {
-      alert('Ця інформація про покупку вже існує.');
+
+    if (newPurchase.volume <= 0 || newPurchase.amount <= 0) {
+      alert('Об\'єм та сума повинні бути більше 0');
       return;
     }
+
+    const existingPurchase = purchases.find(
+      p => p.buyer === newPurchase.buyer && p.product === newPurchase.product && p.species === newPurchase.species
+    );
+
+    if (existingPurchase) {
+      alert('Така покупка вже існує');
+      return;
+    }
+
     setLoadingPurchase(true);
     try {
       const res = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          buyer: newPurchase.buyer.trim(),
-          product: newPurchase.product.trim(),
-          species: newPurchase.species.trim(),
-          volume: newPurchase.volume,
-          amount: newPurchase.amount,
-        }),
+        body: JSON.stringify(newPurchase),
       });
-      if (!res.ok) throw new Error('Не вдалося додати інформацію про покупку');
-      const updatedPurchases = [...purchases, { ...newPurchase }];
-      setPurchases(updatedPurchases);
+
+      if (!res.ok) {
+        throw new Error('Не вдалося додати покупку');
+      }
+
+      setPurchases([...purchases, { ...newPurchase }]);
       setNewPurchase({ buyer: '', product: '', species: '', volume: 0, amount: 0 });
     } catch (error) {
-      console.error('Помилка додавання інформації про покупку:', error);
-      alert('Не вдалося додати інформацію про покупку.');
+      console.error('Помилка додавання покупки:', error);
+      alert(error instanceof Error ? error.message : 'Не вдалося додати покупку');
+    } finally {
+      setLoadingPurchase(false);
     }
-    setLoadingPurchase(false);
   };
 
-  const deletePurchase = async (purchase: { buyer: string; product: string; species: string; volume: number; amount: number }) => {
-    const isUsed = tables.some(table => table.rows.some(row => row.buyer === purchase.buyer));
-    if (isUsed) {
-      alert('Цей покупець використовується в таблиці. Видаліть відповідні рядки перед видаленням.');
+  const deletePurchase = async (purchase: Purchase) => {
+    if (!confirm(`Ви впевнені, що хочете видалити покупку для "${purchase.buyer}"?`)) {
       return;
     }
-    if (
-      confirm(
-        `Ви впевнені, що хочете видалити інформацію про покупку "${purchase.buyer} - ${purchase.product} - ${purchase.species}"?`
-      )
-    ) {
-      setLoadingPurchase(true);
-      try {
-        const res = await fetch('/api/purchases', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            buyer: purchase.buyer,
-            product: purchase.product,
-            species: purchase.species,
-          }),
-        });
-        if (!res.ok) throw new Error('Не вдалося видалити інформацію про покупку');
-        const updatedPurchases = purchases.filter(
-          p =>
-            !(
-              p.buyer === purchase.buyer &&
-              p.product === purchase.product &&
-              p.species === purchase.species
-            )
-        );
-        setPurchases(updatedPurchases);
-      } catch (error) {
-        console.error('Помилка видалення інформації про покупку:', error);
-        alert('Не вдалося видалити інформацію про покупку.');
+
+    setLoadingPurchase(true);
+    try {
+      const res = await fetch('/api/purchases', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(purchase),
+      });
+
+      if (!res.ok) {
+        throw new Error('Не вдалося видалити покупку');
       }
+
+      setPurchases(purchases.filter(p => 
+        p.buyer !== purchase.buyer || 
+        p.product !== purchase.product || 
+        p.species !== purchase.species
+      ));
+    } catch (error) {
+      console.error('Помилка видалення покупки:', error);
+      alert(error instanceof Error ? error.message : 'Не вдалося видалити покупку');
+    } finally {
       setLoadingPurchase(false);
     }
   };
 
   return (
-    <>
-      {tables.map((table, idx) => (
-        <div key={getTableKey(table,)} className="mb-6 border rounded p-4 sm:p-2">
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0">
-            <DateInput tableId={idx} date={table.date} setDate={setDate} />
-            {typeof table.id === "number" && (
-              <button
-                onClick={() => deleteTable(table.id!)}
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 sm:px-3 sm:py-1 sm:text-sm md:text-base cursor-pointer"
-                aria-label="Видалити таблицю"
-                type="button"
-              >
-                Видалити таблицю
-              </button>
-            )}
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="border rounded p-4">
+          <h3 className="text-lg font-semibold mb-2">Лісництва</h3>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={newForest}
+              onChange={e => setNewForest(e.target.value)}
+              placeholder="Нова назва"
+              className="flex-1 px-2 py-1 border rounded"
+            />
+            <button
+              onClick={addForest}
+              disabled={loadingForest}
+              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+            >
+              {loadingForest ? '...' : '+'}
+            </button>
           </div>
-          <EditableDataTable
-            tableId={idx}
-            rows={table.rows}
-            handleFieldChange={handleFieldChange}
-            handleBuyerChange={handleBuyerChange}
-            deleteRow={deleteRow}
-            forests={mappedForests}
-            purchases={purchases}
-            products={mappedProducts}
-            species={mappedSpecies}
-          />
-          <AddRowButton tableId={idx} addRow={addRow} />
+          <ul className="space-y-1">
+            {forests.map(forest => (
+              <li key={forest} className="flex justify-between items-center">
+                <span>{forest}</span>
+                <button
+                  onClick={() => deleteForest(forest)}
+                  disabled={loadingForest}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
-      ))}
-      <div className="mt-6 p-4">
-        <button
-          onClick={() => setIsManageOpen(!isManageOpen)}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer"
-          type="button"
-          aria-label={isManageOpen ? "Приховати керування значеннями" : "Керування значеннями"}
-        >
-          {isManageOpen ? 'Приховати керування значеннями' : 'Керування значеннями'}
-        </button>
-        {isManageOpen && (
-          <div className="mt-4 p-4 border rounded">
-            <h3 className="text-lg font-bold mb-4">Керування значеннями</h3>
-            <div className="flex flex-col gap-6">
-              {/* Лісництва */}
-              <div className="flex flex-col gap-2">
-                <h4 className="text-md font-semibold">Лісництва</h4>
-                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                  <input
-                    type="text"
-                    value={newForest}
-                    onChange={e => setNewForest(e.target.value)}
-                    placeholder="Нове лісництво"
-                    className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
-                    aria-label="Додати нове лісництво"
-                  />
-                  <button
-                    onClick={addForest}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sm:text-sm md:text-base cursor-pointer"
-                    disabled={loadingForest}
-                    type="button"
-                    aria-label="Додати лісництво"
-                  >
-                    {loadingForest ? "Додається..." : "Додати лісництво"}
-                  </button>
+
+        <div className="border rounded p-4">
+          <h3 className="text-lg font-semibold mb-2">Продукція</h3>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={newProduct}
+              onChange={e => setNewProduct(e.target.value)}
+              placeholder="Нова назва"
+              className="flex-1 px-2 py-1 border rounded"
+            />
+            <button
+              onClick={addProduct}
+              disabled={loadingProduct}
+              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+            >
+              {loadingProduct ? '...' : '+'}
+            </button>
+          </div>
+          <ul className="space-y-1">
+            {products.map(product => (
+              <li key={product} className="flex justify-between items-center">
+                <span>{product}</span>
+                <button
+                  onClick={() => deleteProduct(product)}
+                  disabled={loadingProduct}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="border rounded p-4">
+          <h3 className="text-lg font-semibold mb-2">Породи</h3>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={newSpecies}
+              onChange={e => setNewSpecies(e.target.value)}
+              placeholder="Нова назва"
+              className="flex-1 px-2 py-1 border rounded"
+            />
+            <button
+              onClick={addSpecies}
+              disabled={loadingSpecies}
+              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+            >
+              {loadingSpecies ? '...' : '+'}
+            </button>
+          </div>
+          <ul className="space-y-1">
+            {species.map(specie => (
+              <li key={specie} className="flex justify-between items-center">
+                <span>{specie}</span>
+                <button
+                  onClick={() => deleteSpecies(specie)}
+                  disabled={loadingSpecies}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="border rounded p-4">
+          <h3 className="text-lg font-semibold mb-2">Покупки</h3>
+          <div className="space-y-2 mb-2">
+            <input
+              type="text"
+              value={newPurchase.buyer}
+              onChange={e => setNewPurchase({ ...newPurchase, buyer: e.target.value })}
+              placeholder="Покупець"
+              className="w-full px-2 py-1 border rounded"
+            />
+            <select
+              value={newPurchase.product}
+              onChange={e => setNewPurchase({ ...newPurchase, product: e.target.value })}
+              className="w-full px-2 py-1 border rounded"
+            >
+              <option value="">Оберіть продукцію</option>
+              {products.map(product => (
+                <option key={product} value={product}>{product}</option>
+              ))}
+            </select>
+            <select
+              value={newPurchase.species}
+              onChange={e => setNewPurchase({ ...newPurchase, species: e.target.value })}
+              className="w-full px-2 py-1 border rounded"
+            >
+              <option value="">Оберіть породу</option>
+              {species.map(specie => (
+                <option key={specie} value={specie}>{specie}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={newPurchase.volume || ''}
+              onChange={e => setNewPurchase({ ...newPurchase, volume: Number(e.target.value) })}
+              placeholder="Об'єм"
+              className="w-full px-2 py-1 border rounded"
+            />
+            <input
+              type="number"
+              value={newPurchase.amount || ''}
+              onChange={e => setNewPurchase({ ...newPurchase, amount: Number(e.target.value) })}
+              placeholder="Сума"
+              className="w-full px-2 py-1 border rounded"
+            />
+            <button
+              onClick={addPurchase}
+              disabled={loadingPurchase}
+              className="w-full px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+            >
+              {loadingPurchase ? 'Додавання...' : 'Додати покупку'}
+            </button>
+          </div>
+          <ul className="space-y-2">
+            {purchases.map((purchase, index) => (
+              <li key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <div>
+                  <div className="font-semibold">{purchase.buyer}</div>
+                  <div className="text-sm text-gray-600">
+                    {purchase.product} - {purchase.species}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {purchase.volume} m³ - {purchase.amount} грн
+                  </div>
                 </div>
-                <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {mappedForests.map((forest) => (
-                    <li key={forest} className="flex justify-between items-center py-1">
-                      <span>{forest}</span>
-                      <button
-                        onClick={() => deleteForest(forest)}
-                        className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
-                        title="Видалити лісництво"
-                        aria-label={`Видалити лісництво ${forest}`}
-                        type="button"
-                        disabled={loadingForest}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {/* Продукція */}
-              <div className="flex flex-col gap-2">
-                <h4 className="text-md font-semibold">Найменування продукції</h4>
-                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                  <input
-                    type="text"
-                    value={newProduct}
-                    onChange={e => setNewProduct(e.target.value)}
-                    placeholder="Нове найменування продукції"
-                    className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
-                    aria-label="Додати нову продукцію"
-                  />
-                  <button
-                    onClick={addProduct}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sm:text-sm md:text-base cursor-pointer"
-                    disabled={loadingProduct}
-                    type="button"
-                    aria-label="Додати продукцію"
-                  >
-                    {loadingProduct ? "Додається..." : "Додати найменування продукції"}
-                  </button>
-                </div>
-                <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {mappedProducts.map((product) => (
-                    <li key={product} className="flex justify-between items-center py-1">
-                      <span>{product}</span>
-                      <button
-                        onClick={() => deleteProduct(product)}
-                        className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
-                        title="Видалити продукцію"
-                        aria-label={`Видалити продукцію ${product}`}
-                        type="button"
-                        disabled={loadingProduct}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {/* Породи */}
-              <div className="flex flex-col gap-2">
-                <h4 className="text-md font-semibold">Породи</h4>
-                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                  <input
-                    type="text"
-                    value={newSpecies}
-                    onChange={e => setNewSpecies(e.target.value)}
-                    placeholder="Нова порода"
-                    className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
-                    aria-label="Додати нову породу"
-                  />
-                  <button
-                    onClick={addSpecies}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sm:text-sm md:text-base cursor-pointer"
-                    disabled={loadingSpecies}
-                    type="button"
-                    aria-label="Додати породу"
-                  >
-                    {loadingSpecies ? "Додається..." : "Додати породу"}
-                  </button>
-                </div>
-                <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {mappedSpecies.map((specie) => (
-                    <li key={specie} className="flex justify-between items-center py-1">
-                      <span>{specie}</span>
-                      <button
-                        onClick={() => deleteSpecies(specie)}
-                        className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
-                        title="Видалити породу"
-                        aria-label={`Видалити породу ${specie}`}
-                        type="button"
-                        disabled={loadingSpecies}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {/* Покупки */}
-              <div className="flex flex-col gap-2">
-                <h4 className="text-md font-semibold">Інформація про покупки</h4>
-                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                  <input
-                    type="text"
-                    value={newPurchase.buyer}
-                    onChange={e => setNewPurchase({ ...newPurchase, buyer: e.target.value })}
-                    placeholder="Покупець"
-                    className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
-                    aria-label="Покупець для покупки"
-                  />
-                  <input
-                    type="text"
-                    value={newPurchase.product}
-                    onChange={e => setNewPurchase({ ...newPurchase, product: e.target.value })}
-                    placeholder="Продукція"
-                    className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
-                    aria-label="Продукція для покупки"
-                  />
-                  <input
-                    type="text"
-                    value={newPurchase.species}
-                    onChange={e => setNewPurchase({ ...newPurchase, species: e.target.value })}
-                    placeholder="Порода"
-                    className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base flex-grow cursor-pointer"
-                    aria-label="Порода для покупки"
-                  />
-                  <input
-                    type="number"
-                    value={newPurchase.volume}
-                    onChange={e => setNewPurchase({ ...newPurchase, volume: parseInt(e.target.value) || 0 })}
-                    placeholder="Об’єм (м³)"
-                    className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base w-24 cursor-pointer"
-                    min="0"
-                    step="1"
-                    aria-label="Об’єм покупки"
-                  />
-                  <input
-                    type="number"
-                    value={newPurchase.amount}
-                    onChange={e => setNewPurchase({ ...newPurchase, amount: parseInt(e.target.value) || 0 })}
-                    placeholder="Сума (грн)"
-                    className="border px-2 py-1 rounded text-sm sm:text-xs md:text-base w-24 cursor-pointer"
-                    min="0"
-                    step="1"
-                    aria-label="Сума покупки"
-                  />
-                  <button
-                    onClick={addPurchase}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sm:text-sm md:text-base cursor-pointer"
-                    disabled={loadingPurchase}
-                    type="button"
-                    aria-label="Додати інформацію про покупку"
-                  >
-                    {loadingPurchase ? "Додається..." : "Додати інформацію про покупку"}
-                  </button>
-                </div>
-                <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
-                  {purchases.map((purchase) => (
-                    <li key={`${purchase.buyer}-${purchase.product}-${purchase.species}`} className="flex justify-between items-center py-1">
-                      <span>{`${purchase.buyer} - ${purchase.product} - ${purchase.species} (${purchase.volume} м³, ${purchase.amount} грн)`}</span>
-                      <button
-                        onClick={() => deletePurchase(purchase)}
-                        className="cursor-pointer transition-all duration-200 ease-in-out hover:scale-125 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 p-1"
-                        title="Видалити інформацію про покупку"
-                        aria-label={`Видалити інформацію про покупку: ${purchase.buyer}, ${purchase.product}, ${purchase.species}`}
-                        type="button"
-                        disabled={loadingPurchase}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <button
+                  onClick={() => deletePurchase(purchase)}
+                  disabled={loadingPurchase}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {tables.map((table, tableIndex) => (
+          <div key={table.id || tableIndex} className="border rounded p-4">
+            <div className="flex justify-between items-center mb-4">
+              <DateInput
+                tableId={table.id ?? tableIndex}
+                date={table.date}
+                setDate={setDate}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => addRow(table.id!)}
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Додати рядок
+                </button>
+                <button
+                  onClick={() => deleteTable(table.id!)}
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Видалити таблицю
+                </button>
               </div>
             </div>
+            <EditableDataTable
+              tableId={table.id!}
+              rows={table.rows || []}
+              handleFieldChange={(rowIndex, field, value) => handleFieldChange(table.id!, rowIndex, field, value)}
+              handleBuyerChange={(rowIndex, buyer) => handleBuyerChange(table.id!, rowIndex, buyer)}
+              deleteRow={async (tableId, rowId, rowIndex) => {
+                if (!rowId) {
+                  const updatedTables = tables.map((table: TableData) =>
+                    table.id === tableId
+                      ? { ...table, rows: table.rows.filter((_, idx) => idx !== rowIndex) }
+                      : table
+                  );
+                  setTables(updatedTables);
+                  return;
+                }
+                await deleteRow(tableId, rowId);
+              }}
+              forests={forests}
+              purchases={purchases}
+              products={products}
+              species={species}
+            />
           </div>
-        )}
+        ))}
       </div>
-    </>
+    </div>
   );
 }

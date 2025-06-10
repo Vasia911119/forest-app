@@ -2,16 +2,22 @@
 
 import { Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import type { ChartData, ChartOptions, ChartDataset } from 'chart.js';
 import { useMediaQuery } from 'react-responsive';
 import { useMemo } from 'react';
+import type { Row } from '../types';
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface ChartDisplayProps {
-  chartData: {
+  filteredAndSortedRows: Row[];
+  totalVolume: number;
+  totalAmount: number;
+}
+
+interface ForestData {
     labels: string[];
-    datasets: { label: string; data: number[]; backgroundColor: string | string[]; borderColor: string; borderWidth: number; barThickness?: number; categoryPercentage?: number }[];
-  };
+  data: number[];
 }
 
 const generateRandomColor = (): string => {
@@ -23,45 +29,63 @@ const generateRandomColor = (): string => {
   return color;
 };
 
-export default function ChartDisplay({ chartData }: ChartDisplayProps) {
+export default function ChartDisplay({ filteredAndSortedRows, totalVolume, totalAmount }: ChartDisplayProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
+
+  // Групуємо дані за лісництвами
+  const forestData = useMemo<ForestData>(() => {
+    const forestMap = new Map<string, number>();
+    
+    filteredAndSortedRows.forEach(row => {
+      if (row.forest && typeof row.volume === 'number') {
+        const currentVolume = forestMap.get(row.forest) || 0;
+        forestMap.set(row.forest, currentVolume + row.volume);
+      }
+    });
+
+    return {
+      labels: Array.from(forestMap.keys()),
+      data: Array.from(forestMap.values())
+    };
+  }, [filteredAndSortedRows]);
 
   // Генеруємо кольори лише при зміні labels
   const randomColors = useMemo(
-    () => chartData.labels.map(() => generateRandomColor()),
-    [chartData.labels]
+    () => forestData.labels.map(() => generateRandomColor()),
+    [forestData.labels]
   );
 
-  const processedChartData = {
-    labels: chartData.labels,
-    datasets: chartData.datasets.map(dataset => ({
-      ...dataset,
-      barThickness: 30,
-      categoryPercentage: 0.4,
-    })),
-  };
-
-  const pieChartData = {
-    labels: chartData.labels,
+  const processedChartData: ChartData<'bar', number[], string> = {
+    labels: forestData.labels,
     datasets: [{
-      data: chartData.datasets[0].data,
+      type: 'bar' as const,
+      label: 'Об\'єм (м³)',
+      data: forestData.data,
       backgroundColor: randomColors,
       borderColor: '#FFFFFF',
       borderWidth: 1,
-    }],
+      barThickness: 30,
+      categoryPercentage: 0.4,
+    }] as ChartDataset<'bar', number[]>[],
   };
 
-  return (
-    <div className={`mt-4 ${chartData.labels.length > 5 ? 'h-[400px] sm:h-[300px]' : 'h-[300px] sm:h-[250px]'}`}>
-      {isMobile ? (
-        <Pie
-          data={pieChartData}
-          options={{
+  const pieChartData: ChartData<'pie', number[], string> = {
+    labels: forestData.labels,
+    datasets: [{
+      type: 'pie' as const,
+      data: forestData.data,
+      backgroundColor: randomColors,
+      borderColor: '#FFFFFF',
+      borderWidth: 1,
+    }] as ChartDataset<'pie', number[]>[],
+  };
+
+  const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
               legend: {
-                position: 'top',
+        position: 'top' as const,
                 labels: {
                   font: { size: 14 },
                   color: '#2E7D32',
@@ -69,40 +93,21 @@ export default function ChartDisplay({ chartData }: ChartDisplayProps) {
               },
               title: {
                 display: true,
-                text: 'Об’єм за підрозділами (м³)',
-                font: { size: 18, weight: 'bold' },
+        text: `Об'єм за підрозділами (м³) - Всього: ${totalVolume} м³, ${totalAmount} грн`,
+        font: { size: 18, weight: 'bold' as const },
                 color: '#2E7D32',
               },
             },
-          }}
-        />
-      ) : (
-        <Bar
-          data={processedChartData}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'top',
-                labels: {
-                  font: { size: 14 },
-                  color: '#2E7D32',
-                },
-              },
-              title: {
-                display: true,
-                text: 'Об’єм за підрозділами (м³)',
-                font: { size: 18, weight: 'bold' },
-                color: '#2E7D32',
-              },
-            },
+  };
+
+  const barOptions: ChartOptions<'bar'> = {
+    ...commonOptions,
             scales: {
               y: {
                 beginAtZero: true,
                 title: {
                   display: true,
-                  text: 'Об’єм (м³)',
+          text: 'Об\'єм (м³)',
                   font: { size: 14 },
                   color: '#2E7D32',
                 },
@@ -136,7 +141,31 @@ export default function ChartDisplay({ chartData }: ChartDisplayProps) {
             layout: {
               padding: { top: 10, bottom: 10, left: 10, right: 10 },
             },
-          }}
+  };
+
+  const pieOptions: ChartOptions<'pie'> = {
+    ...commonOptions,
+  };
+
+  if (!forestData.labels.length || !forestData.data.length) {
+    return (
+      <div className="mt-4 h-[300px] flex items-center justify-center text-gray-500">
+        Немає даних для відображення
+      </div>
+    );
+  }
+
+  return (
+    <div className={`mt-4 ${forestData.labels.length > 5 ? 'h-[400px] sm:h-[300px]' : 'h-[300px] sm:h-[250px]'}`}>
+      {isMobile ? (
+        <Pie
+          data={pieChartData}
+          options={pieOptions}
+        />
+      ) : (
+        <Bar
+          data={processedChartData}
+          options={barOptions}
         />
       )}
     </div>

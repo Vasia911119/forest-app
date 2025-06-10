@@ -12,6 +12,7 @@ export default function TableEditor() {
   const [species, setSpecies] = useState<string[]>([]);
   const [purchases, setPurchases] = useState<{ buyer: string; product: string; species: string; volume: number; amount: number }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Для модалки вибору дати при створенні таблиці
   const [showDateModal, setShowDateModal] = useState(false);
@@ -20,35 +21,51 @@ export default function TableEditor() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      setError(null);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд таймаут
+
       try {
-        const tablesRes = await fetch('/api/tables');
+        const [tablesRes, forestsRes, productsRes, speciesRes, purchasesRes] = await Promise.all([
+          fetch('/api/tables', { signal: controller.signal }),
+          fetch('/api/forests', { signal: controller.signal }),
+          fetch('/api/products', { signal: controller.signal }),
+          fetch('/api/species', { signal: controller.signal }),
+          fetch('/api/purchases', { signal: controller.signal })
+        ]);
+
         if (!tablesRes.ok) throw new Error('Не вдалося завантажити таблиці');
-        const tablesData = await tablesRes.json();
-        setTables(tablesData);
-
-        const forestsRes = await fetch('/api/forests');
         if (!forestsRes.ok) throw new Error('Не вдалося завантажити лісництва');
-        const forestsData = await forestsRes.json();
-        setForests(forestsData);
-
-        const productsRes = await fetch('/api/products');
         if (!productsRes.ok) throw new Error('Не вдалося завантажити продукцію');
-        const productsData = await productsRes.json();
-        setProducts(productsData);
-
-        const speciesRes = await fetch('/api/species');
         if (!speciesRes.ok) throw new Error('Не вдалося завантажити породи');
-        const speciesData = await speciesRes.json();
-        setSpecies(speciesData);
-
-        const purchasesRes = await fetch('/api/purchases');
         if (!purchasesRes.ok) throw new Error('Не вдалося завантажити покупки');
-        const purchasesData = await purchasesRes.json();
+
+        const [tablesData, forestsData, productsData, speciesData, purchasesData] = await Promise.all([
+          tablesRes.json(),
+          forestsRes.json(),
+          productsRes.json(),
+          speciesRes.json(),
+          purchasesRes.json()
+        ]);
+
+        setTables(Array.isArray(tablesData.tables) ? tablesData.tables : []);
+        setForests(forestsData);
+        setProducts(productsData);
+        setSpecies(speciesData);
         setPurchases(purchasesData);
       } catch (error) {
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            setError('Час очікування вичерпано. Перевірте підключення до інтернету.');
+          } else {
+            setError(error.message || 'Невідома помилка');
+          }
+        } else {
+          setError('Невідома помилка');
+        }
         console.error('Помилка завантаження даних:', error);
-        alert('Не вдалося завантажити дані.');
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     };
@@ -56,21 +73,11 @@ export default function TableEditor() {
     loadData();
   }, []);
 
-  // Фільтруємо пусті рядки перед збереженням
+  // sanitizeTables тепер не фільтрує порожні рядки
   function sanitizeTables(tables: TableData[]): TableData[] {
     return tables.map(t => ({
       ...t,
-      rows: (t.rows || []).filter(
-        r =>
-          r &&
-          typeof r === 'object' &&
-          'forest' in r &&
-          'product' in r &&
-          'species' in r &&
-          r.forest !== '' &&
-          r.product !== '' &&
-          r.species !== ''
-      )
+      rows: t.rows || []
     }));
   }
 
@@ -92,9 +99,12 @@ export default function TableEditor() {
             } catch {}
             throw new Error('Не вдалося зберегти дані. Сервер відповів: ' + text);
           }
+          const responseData = await res.json();
+          return responseData;
         } catch (error) {
           console.error('Помилка збереження:', error);
           alert('Не вдалося зберегти дані: ' + (error instanceof Error ? error.message : error));
+          return null;
         }
       }, 1000),
     []
@@ -152,16 +162,97 @@ export default function TableEditor() {
         alert('Не вдалося видалити таблицю.');
       }
     },
-    [] // setTables не змінюється, тому залежності порожні
+    []
   );
-  console.log('TableEditor tables:', tables);
-  console.log('TableEditor forests:', forests);
+
+  // Додаємо функцію для додавання рядка
+  const addRow = useCallback(async (tableId: number) => {
+    const table = tables.find(t => t.id === tableId);
+    if (!table) {
+      alert('Таблиця не знайдена');
+      return;
+    }
+    try {
+      const res = await fetch('/api/rows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table_id: tableId,
+          forest: '',
+          buyer: '',
+          product: '',
+          species: '',
+          volume: 1,
+          amount: 1
+        })
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Add row response:', { status: res.status, text: errorText });
+        throw new Error('Не вдалося додати рядок');
+      }
+      
+      const newRow = await res.json();
+      setTables(prevTables => prevTables.map(table =>
+        table.id === tableId
+          ? { ...table, rows: [...table.rows, newRow] }
+          : table
+      ));
+    } catch (error) {
+      console.error('Помилка додавання рядка:', error);
+      alert('Не вдалося додати рядок.');
+    }
+  }, [tables]);
+
+  // ОНОВЛЕНА функція видалення рядка
+  const deleteRow = useCallback(async (tableId: number, rowId: number) => {
+    try {
+      const res = await fetch(`/api/rows?id=${rowId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Delete row response:', { status: res.status, text: errorText });
+        throw new Error('Не вдалося видалити рядок');
+      }
+      setTables(prevTables =>
+        prevTables.map(table =>
+          table.id === tableId
+            ? { ...table, rows: table.rows.filter(row => row.id !== rowId) }
+            : table
+        )
+      );
+    } catch (error) {
+      console.error('Помилка видалення рядка:', error);
+      alert('Не вдалося видалити рядок.');
+    }
+  }, [tables]);
+
+  useEffect(() => {
+    return () => {
+      debouncedSave.cancel();
+    };
+  }, [debouncedSave]);
 
   return (
     <div className="w-full overflow-x-auto p-4 sm:p-2">
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          <p className="font-bold">Помилка:</p>
+          <p>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+          >
+            Спробувати ще раз
+          </button>
+        </div>
+      )}
+
       <button
         onClick={openDateModal}
-        className="mb-4 sm:mb-2 bg-green-500 text-white px-4 py-2 sm:px-3 sm:py-1 rounded hover:bg-green-600 sm:text-sm md:text-base cursor-pointer"
+        className="mb-4 sm:mb-2 bg-green-500 text-white px-4 py-2 sm:px-3 sm:py-1 rounded hover:bg-green-600 sm:text-sm md:text-base cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={loading}
         type="button"
         aria-label="Додати таблицю"
@@ -204,6 +295,8 @@ export default function TableEditor() {
         setTables={setTables}
         debouncedSave={debouncedSave}
         deleteTable={deleteTable}
+        deleteRow={deleteRow}
+        addRow={addRow}
         forests={forests}
         setForests={setForests}
         products={products}
