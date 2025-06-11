@@ -47,6 +47,8 @@ export default function TableList({
   const [loadingSpecies, setLoadingSpecies] = useState(false);
   const [loadingPurchase, setLoadingPurchase] = useState(false);
 
+  const [showReferences, setShowReferences] = useState(false);
+
   const handleFieldChange = useCallback((tableId: number, rowIndex: number, field: keyof Row, value: string | number) => {
     console.log('TableList.handleFieldChange:', { tableId, rowIndex, field, value });
     
@@ -114,33 +116,42 @@ export default function TableList({
     debouncedSave({ tables: updatedTables });
   }, [tables, purchases, debouncedSave, setTables]);
 
-  const setDate = useCallback(async (tableIdx: number, date: string) => {
+  async function setDate(tableId: number, date: string) {
     if (!date) {
       alert('Будь ласка, вкажіть дату');
       return;
     }
 
     try {
-      const table = tables[tableIdx];
+      const tableIndex = tables.findIndex(t => t.id === tableId);
+      if (tableIndex === -1) {
+        alert('Таблиця не знайдена. Можливо, її було видалено або стан не оновився.');
+        return;
+      }
+      const table = tables[tableIndex];
       if (!table) {
-        throw new Error('Таблиця не знайдена');
+        alert('Таблиця не знайдена. Можливо, її було видалено або стан не оновився.');
+        return;
       }
 
       // Перевіряємо чи дата унікальна
-      const isDateUnique = !tables.some((t, idx) => idx !== tableIdx && t.date === date);
+      const isDateUnique = !tables.some(t => t.id !== tableId && t.date === date);
       if (!isDateUnique) {
         throw new Error('Таблиця з такою датою вже існує');
       }
   
       const newTables = [...tables];
-      newTables[tableIdx] = { ...table, date };
+      const newTableData = table._tmpId
+        ? { id: table.id, date, rows: table.rows, _tmpId: table._tmpId }
+        : { id: table.id, date, rows: table.rows };
+      newTables[tableIndex] = newTableData;
       setTables(newTables);
 
       if (table.id) {
-        const res = await fetch('/api/tables/update', {
-          method: 'PUT',
+        const res = await fetch('/api/tables', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: table.id, date }),
+          body: JSON.stringify({ tables: [{ ...table, date }] }),
         });
 
         if (!res.ok) {
@@ -158,7 +169,10 @@ export default function TableList({
         }
 
         const data = await res.json();
-        newTables[tableIdx] = { ...newTables[tableIdx], id: data.id };
+        const newTableDataWithId = table._tmpId
+          ? { id: data.id, date, rows: table.rows, _tmpId: table._tmpId }
+          : { id: data.id, date, rows: table.rows };
+        newTables[tableIndex] = newTableDataWithId;
         setTables(newTables);
       }
 
@@ -166,8 +180,8 @@ export default function TableList({
     } catch (error) {
       console.error('Помилка оновлення дати:', error);
       alert(error instanceof Error ? error.message : 'Не вдалося оновити дату');
-      }
-  }, [tables, setTables, debouncedSave]);
+    }
+  }
 
   const addForest = async () => {
     if (!newForest.trim()) {
@@ -420,209 +434,206 @@ export default function TableList({
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="border rounded p-4">
-          <h3 className="text-lg font-semibold mb-2">Лісництва</h3>
-          <div className="flex gap-2 mb-2">
+              <button
+        className="mb-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        onClick={() => setShowReferences(v => !v)}
+                type="button"
+              >
+        ⇅ Вхідні дані
+              </button>
+      {showReferences && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="border rounded p-4">
+            <h3 className="text-lg font-semibold mb-2">Лісництва</h3>
+            <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={newForest}
                     onChange={e => setNewForest(e.target.value)}
-              placeholder="Нова назва"
-              className="flex-1 px-2 py-1 border rounded"
+                placeholder="Нова назва"
+                className="flex-1 px-2 py-1 border rounded"
                   />
                   <button
                     onClick={addForest}
                     disabled={loadingForest}
-              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
                   >
-              {loadingForest ? '...' : '+'}
+                {loadingForest ? '...' : '+'}
                   </button>
                 </div>
-          <ul className="space-y-1">
-            {forests.map(forest => (
-              <li key={forest} className="flex justify-between items-center">
+            <ul className="space-y-1">
+              {forests.map(forest => (
+                <li key={forest} className="flex justify-between items-center">
                       <span>{forest}</span>
                       <button
                         onClick={() => deleteForest(forest)}
                         disabled={loadingForest}
-                  className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700"
                       >
-                  ×
+                    ×
                       </button>
                     </li>
                   ))}
                 </ul>
               </div>
-
-        <div className="border rounded p-4">
-          <h3 className="text-lg font-semibold mb-2">Продукція</h3>
-          <div className="flex gap-2 mb-2">
+          <div className="border rounded p-4">
+            <h3 className="text-lg font-semibold mb-2">Продукція</h3>
+            <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={newProduct}
                     onChange={e => setNewProduct(e.target.value)}
-              placeholder="Нова назва"
-              className="flex-1 px-2 py-1 border rounded"
+                placeholder="Нова назва"
+                className="flex-1 px-2 py-1 border rounded"
                   />
                   <button
                     onClick={addProduct}
                     disabled={loadingProduct}
-              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
                   >
-              {loadingProduct ? '...' : '+'}
+                {loadingProduct ? '...' : '+'}
                   </button>
                 </div>
-          <ul className="space-y-1">
-            {products.map(product => (
-              <li key={product} className="flex justify-between items-center">
+            <ul className="space-y-1">
+              {products.map(product => (
+                <li key={product} className="flex justify-between items-center">
                       <span>{product}</span>
                       <button
                         onClick={() => deleteProduct(product)}
                         disabled={loadingProduct}
-                  className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700"
                       >
-                  ×
+                    ×
                       </button>
                     </li>
                   ))}
                 </ul>
               </div>
-
-        <div className="border rounded p-4">
-          <h3 className="text-lg font-semibold mb-2">Породи</h3>
-          <div className="flex gap-2 mb-2">
+          <div className="border rounded p-4">
+            <h3 className="text-lg font-semibold mb-2">Породи</h3>
+            <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={newSpecies}
                     onChange={e => setNewSpecies(e.target.value)}
-              placeholder="Нова назва"
-              className="flex-1 px-2 py-1 border rounded"
+                placeholder="Нова назва"
+                className="flex-1 px-2 py-1 border rounded"
                   />
                   <button
                     onClick={addSpecies}
                     disabled={loadingSpecies}
-              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
                   >
-              {loadingSpecies ? '...' : '+'}
+                {loadingSpecies ? '...' : '+'}
                   </button>
                 </div>
-          <ul className="space-y-1">
-            {species.map(specie => (
-              <li key={specie} className="flex justify-between items-center">
+            <ul className="space-y-1">
+              {species.map(specie => (
+                <li key={specie} className="flex justify-between items-center">
                       <span>{specie}</span>
                       <button
                         onClick={() => deleteSpecies(specie)}
                         disabled={loadingSpecies}
-                  className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700"
                       >
-                  ×
+                    ×
                       </button>
                     </li>
                   ))}
                 </ul>
               </div>
-
-        <div className="border rounded p-4">
-          <h3 className="text-lg font-semibold mb-2">Покупки</h3>
-          <div className="space-y-2 mb-2">
+          <div className="border rounded p-4">
+            <h3 className="text-lg font-semibold mb-2">Покупки</h3>
+            <div className="space-y-2 mb-2">
                   <input
                     type="text"
                     value={newPurchase.buyer}
                     onChange={e => setNewPurchase({ ...newPurchase, buyer: e.target.value })}
                     placeholder="Покупець"
-              className="w-full px-2 py-1 border rounded"
+                className="w-full px-2 py-1 border rounded"
                   />
-            <select
+              <select
                     value={newPurchase.product}
                     onChange={e => setNewPurchase({ ...newPurchase, product: e.target.value })}
-              className="w-full px-2 py-1 border rounded"
-            >
-              <option value="">Оберіть продукцію</option>
-              {products.map(product => (
-                <option key={product} value={product}>{product}</option>
-              ))}
-            </select>
-            <select
+                className="w-full px-2 py-1 border rounded"
+              >
+                <option value="">Оберіть продукцію</option>
+                {products.map(product => (
+                  <option key={product} value={product}>{product}</option>
+                ))}
+              </select>
+              <select
                     value={newPurchase.species}
                     onChange={e => setNewPurchase({ ...newPurchase, species: e.target.value })}
-              className="w-full px-2 py-1 border rounded"
-            >
-              <option value="">Оберіть породу</option>
-              {species.map(specie => (
-                <option key={specie} value={specie}>{specie}</option>
-              ))}
-            </select>
+                className="w-full px-2 py-1 border rounded"
+              >
+                <option value="">Оберіть породу</option>
+                {species.map(specie => (
+                  <option key={specie} value={specie}>{specie}</option>
+                ))}
+              </select>
                   <input
                     type="number"
-              value={newPurchase.volume || ''}
-              onChange={e => setNewPurchase({ ...newPurchase, volume: Number(e.target.value) })}
-              placeholder="Об'єм"
-              className="w-full px-2 py-1 border rounded"
+                value={newPurchase.volume || ''}
+                onChange={e => setNewPurchase({ ...newPurchase, volume: Number(e.target.value) })}
+                placeholder="Об'єм"
+                className="w-full px-2 py-1 border rounded"
                   />
                   <input
                     type="number"
-              value={newPurchase.amount || ''}
-              onChange={e => setNewPurchase({ ...newPurchase, amount: Number(e.target.value) })}
-              placeholder="Сума"
-              className="w-full px-2 py-1 border rounded"
+                value={newPurchase.amount || ''}
+                onChange={e => setNewPurchase({ ...newPurchase, amount: Number(e.target.value) })}
+                placeholder="Сума"
+                className="w-full px-2 py-1 border rounded"
                   />
                   <button
                     onClick={addPurchase}
+                disabled={loadingPurchase}
+                className="w-full px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+              >
+                {loadingPurchase ? 'Додавання...' : 'Додати покупку'}
+              </button>
+            </div>
+            <ul className="space-y-2">
+              {purchases.map((purchase, index) => (
+                <li key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div>
+                    <div className="font-semibold">{purchase.buyer}</div>
+                    <div className="text-sm text-gray-600">
+                      {purchase.product} - {purchase.species}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {purchase.volume} m³ - {purchase.amount} грн
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deletePurchase(purchase)}
                     disabled={loadingPurchase}
-              className="w-full px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                    className="text-red-500 hover:text-red-700"
                   >
-              {loadingPurchase ? 'Додавання...' : 'Додати покупку'}
-                  </button>
-          </div>
-          <ul className="space-y-2">
-            {purchases.map((purchase, index) => (
-              <li key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <div>
-                  <div className="font-semibold">{purchase.buyer}</div>
-                  <div className="text-sm text-gray-600">
-                    {purchase.product} - {purchase.species}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {purchase.volume} m³ - {purchase.amount} грн
-                  </div>
-                </div>
-                      <button
-                        onClick={() => deletePurchase(purchase)}
-                        disabled={loadingPurchase}
-                  className="text-red-500 hover:text-red-700"
-                      >
-                  ×
+                    ×
                       </button>
                     </li>
                   ))}
                 </ul>
-              </div>
-            </div>
-
+          </div>
+        </div>
+      )}
       <div className="space-y-4">
         {tables.map((table, tableIndex) => (
           <div key={table.id || tableIndex} className="border rounded p-4">
             <div className="flex justify-between items-center mb-4">
               <DateInput
-                tableId={table.id ?? tableIndex}
+                tableId={table.id}
                 date={table.date}
                 setDate={setDate}
               />
-              <div className="flex gap-2">
-                <button
-                  onClick={() => addRow(table.id!)}
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Додати рядок
-                </button>
-                <button
-                  onClick={() => deleteTable(table.id!)}
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  Видалити таблицю
-                </button>
-              </div>
+              <button
+                onClick={() => deleteTable(table.id!)}
+                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Видалити таблицю
+              </button>
             </div>
             <EditableDataTable
               tableId={table.id!}
@@ -646,6 +657,13 @@ export default function TableList({
               products={products}
               species={species}
             />
+            <button
+              onClick={() => addRow(table.id!)}
+              className="mt-2 mb-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex items-center gap-1 text-sm"
+              type="button"
+            >
+              <span className="text-base font-bold">+</span> Додати рядок
+            </button>
           </div>
         ))}
       </div>

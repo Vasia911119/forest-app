@@ -26,7 +26,7 @@ const DateInput = memo(function DateInput({
   return (
     <div className="mb-4 sm:mb-2">
       <h2 className="text-xl sm:text-lg md:text-2xl font-bold mb-2 sm:mb-1">
-        Орієнтовний план реалізації (Таблиця {tableId + 1})
+        Орієнтовний план реалізації на {new Date(date).toLocaleDateString('uk-UA')}
       </h2>
       <input
         type="date"

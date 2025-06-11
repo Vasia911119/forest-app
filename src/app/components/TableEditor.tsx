@@ -130,13 +130,10 @@ export default function TableEditor() {
         body: JSON.stringify({ date: pendingDate }),
       });
       if (!res.ok) throw new Error('Не вдалося створити таблицю');
-      const { id } = await res.json();
-      const newTable: TableData = {
-        id,
-        date: pendingDate,
-        rows: [],
-      };
-      setTables(prev => [...prev, newTable]);
+      // Після створення — оновлюємо масив таблиць з сервера
+      const tablesRes = await fetch('/api/tables');
+      const tablesData = await tablesRes.json();
+      setTables(Array.isArray(tablesData.tables) ? tablesData.tables : []);
       setPendingDate('');
       setShowDateModal(false);
     } catch (error) {
@@ -250,9 +247,28 @@ export default function TableEditor() {
         </div>
       )}
 
+      {/* TableList з кнопкою ⇅ Вхідні дані тепер першою */}
+      <TableList
+        tables={tables}
+        setTables={setTables}
+        debouncedSave={debouncedSave}
+        deleteTable={deleteTable}
+        deleteRow={deleteRow}
+        addRow={addRow}
+        forests={forests}
+        setForests={setForests}
+        products={products}
+        setProducts={setProducts}
+        species={species}
+        setSpecies={setSpecies}
+        purchases={purchases}
+        setPurchases={setPurchases}
+      />
+
+      {/* Кнопка Додати таблицю тепер нижче */}
       <button
         onClick={openDateModal}
-        className="mb-4 sm:mb-2 bg-green-500 text-white px-4 py-2 sm:px-3 sm:py-1 rounded hover:bg-green-600 sm:text-sm md:text-base cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mt-4 sm:mt-2 bg-emerald-600 text-white px-4 py-2 sm:px-3 sm:py-1 rounded hover:bg-emerald-700 sm:text-sm md:text-base cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={loading}
         type="button"
         aria-label="Додати таблицю"
@@ -289,23 +305,6 @@ export default function TableEditor() {
           </div>
         </div>
       )}
-
-      <TableList
-        tables={tables}
-        setTables={setTables}
-        debouncedSave={debouncedSave}
-        deleteTable={deleteTable}
-        deleteRow={deleteRow}
-        addRow={addRow}
-        forests={forests}
-        setForests={setForests}
-        products={products}
-        setProducts={setProducts}
-        species={species}
-        setSpecies={setSpecies}
-        purchases={purchases}
-        setPurchases={setPurchases}
-      />
     </div>
   );
 }
