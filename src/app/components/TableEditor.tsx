@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import debounce from 'lodash.debounce';
 import type { TableData } from '../types';
 import TableList from './TableList';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function TableEditor() {
   const [tables, setTables] = useState<TableData[]>([]);
@@ -234,6 +235,7 @@ export default function TableEditor() {
 
   return (
     <div className="w-full overflow-x-auto p-4 sm:p-2">
+      {loading && <LoadingSpinner />}
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
           <p className="font-bold">Помилка:</p>

@@ -49,7 +49,7 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
   return (
     <div className="overflow-x-auto mb-4 sm:mb-2">
       <table className="min-w-full border text-[12px] sm:text-base text-left">
-        <thead className="bg-gray-50">
+        <thead className="bg-slate-200">
           <tr>
             <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[40px] whitespace-normal">№</th>
             <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal">Лісництво</th>
@@ -94,7 +94,7 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
           ))}
         </tbody>
         <tfoot>
-          <tr>
+          <tr className="bg-slate-200">
             <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold" colSpan={5}>Всього:</td>
             <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold">{Math.round(totalVolume)}</td>
             <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold">{Math.round(totalAmount)}</td>

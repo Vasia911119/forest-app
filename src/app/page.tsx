@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import TableView from './components/TableView';
+import ScrollToTop from './components/ScrollToTop';
 
 export const metadata: Metadata = {
   title: 'Головна | Forest App',
@@ -13,6 +14,7 @@ export default function Home() {
         Головна сторінка
       </h1>
       <TableView />
+      <ScrollToTop />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { TableData } from '../types';
 import TableDisplayList from './TableDisplayList';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function TableView() {
   const [tables, setTables] = useState<TableData[]>([]);
@@ -33,11 +34,7 @@ export default function TableView() {
   }, [fetchData]);
 
   if (loading) {
-    return (
-      <div className="text-center text-gray-500 my-4">
-        Завантаження...
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error) {
