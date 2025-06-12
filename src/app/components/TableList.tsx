@@ -50,8 +50,6 @@ export default function TableList({
   const [showReferences, setShowReferences] = useState(false);
 
   const handleFieldChange = useCallback((tableId: number, rowIndex: number, field: keyof Row, value: string | number) => {
-    console.log('TableList.handleFieldChange:', { tableId, rowIndex, field, value });
-    
     const updatedTables = tables.map(table => {
       if (table.id === tableId) {
         const updatedRows = [...table.rows];
@@ -66,7 +64,7 @@ export default function TableList({
           ...table,
           rows: updatedRows
         };
-}
+      }
       return table;
     });
     
@@ -75,8 +73,6 @@ export default function TableList({
   }, [tables, debouncedSave, setTables]);
 
   const handleBuyerChange = useCallback((tableId: number, rowIndex: number, buyer: string) => {
-    console.log('TableList.handleBuyerChange:', { tableId, rowIndex, buyer });
-    
     const updatedTables = tables.map(table => {
       if (table.id === tableId) {
         const updatedRows = [...table.rows];

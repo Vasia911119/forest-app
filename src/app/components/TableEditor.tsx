@@ -85,7 +85,7 @@ export default function TableEditor() {
     () =>
       debounce(async (rawData: { tables: TableData[] }) => {
         const data = { tables: sanitizeTables(rawData.tables) };
-        console.log('debouncedSave payload:', JSON.stringify(data, null, 2));
+        // console.log('debouncedSave payload:', JSON.stringify(data, null, 2));
         try {
           const res = await fetch('/api/tables', {
             method: 'POST',

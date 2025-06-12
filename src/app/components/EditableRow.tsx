@@ -17,7 +17,6 @@ interface EditableRowProps {
 
 const EditableRow = memo(function EditableRow({
   row,
-  rowIndex,
   tableId,
   handleFieldChange,
   handleBuyerChange,
@@ -30,13 +29,11 @@ const EditableRow = memo(function EditableRow({
   const handleNumericChange = (field: 'volume' | 'amount', value: string) => {
     const numValue = value === '' ? 0 : Number(value);
     if (!isNaN(numValue)) {
-      console.log('Numeric change:', { field, value: numValue, rowIndex, tableId });
       handleFieldChange(field, numValue);
     }
   };
 
   const handleSelectChange = (field: keyof Row, e: ChangeEvent<HTMLSelectElement>) => {
-    console.log(`${field} change:`, { value: e.target.value, rowIndex, tableId });
     handleFieldChange(field, e.target.value);
   };
 
@@ -62,7 +59,6 @@ const EditableRow = memo(function EditableRow({
         <select
           value={row.buyer}
           onChange={(e) => {
-            console.log('Buyer change:', { value: e.target.value, rowIndex, tableId });
             handleBuyerChange(e.target.value);
           }}
           className="w-full p-1 border rounded"
@@ -118,7 +114,6 @@ const EditableRow = memo(function EditableRow({
       <td className="px-4 py-2 border">
         <button
           onClick={() => {
-            console.log('Delete row clicked:', { tableId, rowId: row.id, row, tableIdType: typeof tableId, rowIdType: typeof row.id });
             if (row.id) {
               deleteRow(tableId, row.id);
             }
