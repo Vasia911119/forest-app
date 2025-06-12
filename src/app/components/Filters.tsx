@@ -43,7 +43,7 @@ const Filters = memo(function Filters({
         aria-label="Фільтр за підрозділом"
         value={filter.forest}
         onChange={e => handleFilterChange('forest', e.target.value)}
-        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base"
+        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
         autoComplete="off"
         maxLength={50}
       />
@@ -53,7 +53,7 @@ const Filters = memo(function Filters({
         aria-label="Фільтр за покупцем"
         value={filter.buyer}
         onChange={e => handleFilterChange('buyer', e.target.value)}
-        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base"
+        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
         autoComplete="off"
         maxLength={50}
       />
@@ -63,14 +63,14 @@ const Filters = memo(function Filters({
         aria-label="Фільтр за породою"
         value={filter.species}
         onChange={e => handleFilterChange('species', e.target.value)}
-        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base"
+        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
         autoComplete="off"
         maxLength={50}
       />
       <select
         value={sortBy || ''}
         onChange={handleSortChange}
-        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base"
+        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
         aria-label="Сортувати за"
       >
         <option value="">Сортувати за...</option>

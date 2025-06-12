@@ -26,8 +26,8 @@ const SortControls = memo(function SortControls({
   }, [tableIdx, sortBy, sortOrder, updateSortBy, updateSortOrder]);
 
   const getButtonClassName = useCallback((field: keyof Row) => {
-    return `px-2 py-1 border rounded transition-colors duration-200 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-      sortBy === field ? 'bg-blue-100' : ''
+    return `px-2 py-1 border rounded transition-colors duration-200 hover:bg-blue-50 dark:hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${
+      sortBy === field ? 'bg-blue-100 dark:bg-blue-800' : ''
     }`;
   }, [sortBy]);
 

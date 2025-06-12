@@ -48,16 +48,16 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
 
   return (
     <div className="overflow-x-auto mb-4 sm:mb-2">
-      <table className="min-w-full border text-[12px] sm:text-base text-left">
-        <thead className="bg-slate-200">
+      <table className="min-w-full border text-[12px] sm:text-base text-left bg-white dark:bg-gray-900 dark:text-gray-100">
+        <thead className="bg-slate-200 dark:bg-gray-800">
           <tr>
-            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[40px] whitespace-normal">№</th>
-            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal">Лісництво</th>
-            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal">Покупець</th>
-            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[120px] whitespace-normal">Найменування продукції</th>
-            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[80px] whitespace-normal">Порода</th>
+            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[40px] whitespace-normal dark:border-gray-700">№</th>
+            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal dark:border-gray-700">Лісництво</th>
+            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal dark:border-gray-700">Покупець</th>
+            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[120px] whitespace-normal dark:border-gray-700">Найменування продукції</th>
+            <th className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[80px] whitespace-normal dark:border-gray-700">Порода</th>
             <th
-              className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal cursor-pointer select-none hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+              className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[100px] whitespace-normal cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none dark:border-gray-700"
               onClick={handleVolumeSort}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -72,7 +72,7 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
               Орієнтовний об&apos;єм (м³) {sortBy === 'volume' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
             <th
-              className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[120px] whitespace-normal cursor-pointer select-none hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+              className="border px-2 py-1 sm:px-1 sm:py-0.5 min-w-[120px] whitespace-normal cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none dark:border-gray-700"
               onClick={handleAmountSort}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -94,10 +94,10 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
           ))}
         </tbody>
         <tfoot>
-          <tr className="bg-slate-200">
-            <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold" colSpan={5}>Всього:</td>
-            <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold">{Math.round(totalVolume)}</td>
-            <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold">{Math.round(totalAmount)}</td>
+          <tr className="bg-slate-200 dark:bg-gray-800">
+            <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold dark:border-gray-700" colSpan={5}>Всього:</td>
+            <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold dark:border-gray-700">{Math.round(totalVolume)}</td>
+            <td className="border px-2 py-1 sm:px-1 sm:py-0.5 font-bold dark:border-gray-700">{Math.round(totalAmount)}</td>
           </tr>
         </tfoot>
       </table>

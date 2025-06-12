@@ -24,7 +24,7 @@ const FilterControls = memo(function FilterControls({ tableIdx, filter, updateFi
         value={filter.forest}
         onChange={(e) => handleChange('forest', e.target.value)}
         placeholder="Фільтр по лісництву"
-        className="px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
         aria-label="Фільтр по лісництву"
       />
       <input
@@ -32,7 +32,7 @@ const FilterControls = memo(function FilterControls({ tableIdx, filter, updateFi
         value={filter.buyer}
         onChange={(e) => handleChange('buyer', e.target.value)}
         placeholder="Фільтр по покупцю"
-        className="px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
         aria-label="Фільтр по покупцю"
       />
       <input
@@ -40,7 +40,7 @@ const FilterControls = memo(function FilterControls({ tableIdx, filter, updateFi
         value={filter.species}
         onChange={(e) => handleChange('species', e.target.value)}
         placeholder="Фільтр по породі"
-        className="px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
         aria-label="Фільтр по породі"
       />
     </div>

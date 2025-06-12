@@ -61,28 +61,28 @@ export default function EditableDataTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
+      <table className="min-w-full border-collapse bg-white dark:bg-gray-900 dark:text-gray-100">
         <thead>
           <tr>
-            <th className="px-4 py-2 border cursor-pointer select-none" onClick={() => handleSort('forest')}>
+            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('forest')}>
               Лісництво {sortBy === 'forest' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border cursor-pointer select-none" onClick={() => handleSort('buyer')}>
+            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('buyer')}>
               Покупець {sortBy === 'buyer' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border cursor-pointer select-none" onClick={() => handleSort('product')}>
+            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('product')}>
               Продукція {sortBy === 'product' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border cursor-pointer select-none" onClick={() => handleSort('species')}>
+            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('species')}>
               Порода {sortBy === 'species' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border cursor-pointer select-none" onClick={() => handleSort('volume')}>
+            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('volume')}>
               Об&apos;єм {sortBy === 'volume' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border cursor-pointer select-none" onClick={() => handleSort('amount')}>
+            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('amount')}>
               Сума {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border">Дії</th>
+            <th className="px-4 py-2 border dark:border-gray-700">Дії</th>
           </tr>
         </thead>
         <tbody>

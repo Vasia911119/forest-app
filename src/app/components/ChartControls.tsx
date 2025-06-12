@@ -21,12 +21,12 @@ const ChartControls = memo(function ChartControls({ tableIdx, showChart, updateS
     <div className="flex flex-wrap gap-2 items-center">
       <button
         onClick={handleToggleChart}
-        className={`px-2 py-1 border rounded ${showChart ? 'bg-blue-100' : ''}`}
+        className={`px-2 py-1 border rounded dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${showChart ? 'bg-blue-100 dark:bg-blue-800' : ''}`}
       >
         {showChart ? 'Сховати графік' : 'Показати графік'}
       </button>
       {showChart && (
-        <div className="text-sm">
+        <div className="text-sm dark:text-gray-300">
           <div>Загальний об&apos;єм: {Math.round(totals.totalVolume)} m³</div>
           <div>Загальна сума: {Math.round(totals.totalAmount)} грн</div>
         </div>

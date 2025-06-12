@@ -25,7 +25,7 @@ const DateInput = memo(function DateInput({
 
   return (
     <div className="mb-4 sm:mb-2">
-      <h2 className="text-xl sm:text-lg md:text-2xl font-bold mb-2 sm:mb-1">
+      <h2 className="text-xl sm:text-lg md:text-2xl font-bold mb-2 sm:mb-1 dark:text-gray-100">
         Орієнтовний план реалізації на {new Date(date).toLocaleDateString('uk-UA')}
       </h2>
       <input
@@ -33,7 +33,7 @@ const DateInput = memo(function DateInput({
         value={date}
         aria-label="Оберіть дату для цього плану"
         onChange={handleDateChange}
-        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base"
+        className="border px-2 py-1 sm:px-1 sm:py-0.5 rounded text-sm sm:text-xs md:text-base dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
         required
         min={new Date().toISOString().split('T')[0]} // Забороняємо вибір дат у минулому
       />

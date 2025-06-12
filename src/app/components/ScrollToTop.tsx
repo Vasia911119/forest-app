@@ -31,13 +31,13 @@ export default function ScrollToTop() {
   return (
     <button
       onClick={scrollToTop}
-      className={`fixed bottom-8 right-8 p-3 rounded-full bg-emerald-600 text-white shadow-lg transition-all duration-300 ease-in-out transform hover:scale-110 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:bottom-4 sm:right-4 ${
+      className={`fixed bottom-8 right-8 p-3 rounded-full bg-emerald-600 dark:bg-emerald-700 text-white shadow-lg dark:shadow-emerald-900 transition-all duration-300 ease-in-out transform hover:scale-110 hover:bg-emerald-700 dark:hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:bottom-4 sm:right-4 ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
       }`}
       aria-label="Прокрутити вгору"
     >
       <svg
-        className="w-6 h-6 sm:w-5 sm:h-5"
+        className="w-6 h-6 sm:w-5 sm:h-5 text-white dark:text-emerald-200"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
