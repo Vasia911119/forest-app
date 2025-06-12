@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     }
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: 'Внутрішня помилка сервера' }, { status: 500 });
   }
 }
@@ -36,6 +37,7 @@ export async function DELETE(request: Request) {
     }
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: 'Внутрішня помилка сервера' }, { status: 500 });
   }
 }
@@ -56,6 +58,7 @@ export async function PATCH(request: Request) {
     }
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: 'Внутрішня помилка сервера' }, { status: 500 });
   }
 }

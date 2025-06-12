@@ -3,28 +3,43 @@ import { NextResponse } from 'next/server';
 
 // GET all forests
 export async function GET() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.from('forests').select('*').order('name');
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data.map(f => f.name));
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('forests').select('*').order('name');
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data.map(f => f.name));
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Внутрішня помилка сервера' }, { status: 500 });
+  }
 }
 
 // Add new forest
 export async function POST(request: Request) {
-  const { name } = await request.json();
-  if (!name) return NextResponse.json({ error: 'Порожня назва' }, { status: 400 });
-  const supabase = await createClient();
-  const { error } = await supabase.from('forests').insert({ name });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ message: 'Додано' }, { status: 201 });
+  try {
+    const { name } = await request.json();
+    if (!name) return NextResponse.json({ error: 'Порожня назва' }, { status: 400 });
+    const supabase = await createClient();
+    const { error } = await supabase.from('forests').insert({ name });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ message: 'Додано' }, { status: 201 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Внутрішня помилка сервера' }, { status: 500 });
+  }
 }
 
 // Delete forest
 export async function DELETE(request: Request) {
-  const { name } = await request.json();
-  if (!name) return NextResponse.json({ error: 'Порожня назва' }, { status: 400 });
-  const supabase = await createClient();
-  const { error } = await supabase.from('forests').delete().eq('name', name);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ message: 'Видалено' }, { status: 200 });
+  try {
+    const { name } = await request.json();
+    if (!name) return NextResponse.json({ error: 'Порожня назва' }, { status: 400 });
+    const supabase = await createClient();
+    const { error } = await supabase.from('forests').delete().eq('name', name);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ message: 'Видалено' }, { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Внутрішня помилка сервера' }, { status: 500 });
+  }
 }
