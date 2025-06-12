@@ -1,7 +1,9 @@
 'use client';
 
+import type { TableData } from '../types';
+
 type TablesClientProps = {
-  tables: any;
+  tables: TableData[];
   error: string | null;
 };
 
