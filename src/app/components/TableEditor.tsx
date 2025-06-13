@@ -234,7 +234,7 @@ export default function TableEditor() {
   }, [debouncedSave]);
 
   return (
-    <div className="w-full overflow-x-auto p-4 sm:p-2">
+    <div className="w-full overflow-x-auto p-0 md:p-2">
       {loading && <LoadingSpinner />}
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">

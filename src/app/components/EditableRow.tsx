@@ -47,7 +47,7 @@ const EditableRow = memo(function EditableRow({
         <select
           value={row.forest}
           onChange={(e) => handleSelectChange('forest', e)}
-          className="w-full p-1.5 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
+          className="w-full p-1 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
         >
           <option value="">Виберіть лісництво</option>
           {forests.map(f => (
@@ -61,7 +61,7 @@ const EditableRow = memo(function EditableRow({
           onChange={(e) => {
             handleBuyerChange(e.target.value);
           }}
-          className="w-full p-1.5 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
+          className="w-full p-1 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
         >
           <option value="">Виберіть покупця</option>
           {purchases.map(p => (
@@ -73,7 +73,7 @@ const EditableRow = memo(function EditableRow({
         <select
           value={row.product}
           onChange={(e) => handleSelectChange('product', e)}
-          className="w-full p-1.5 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
+          className="w-full p-1 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
         >
           <option value="">Виберіть продукцію</option>
           {products.map(p => (
@@ -85,7 +85,7 @@ const EditableRow = memo(function EditableRow({
         <select
           value={row.species}
           onChange={(e) => handleSelectChange('species', e)}
-          className="w-full p-1.5 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
+          className="w-full p-1 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
         >
           <option value="">Виберіть породу</option>
           {species.map(s => (
@@ -98,7 +98,7 @@ const EditableRow = memo(function EditableRow({
           type="number"
           value={row.volume || ''}
           onChange={(e) => handleNumericChange('volume', e.target.value)}
-          className="w-full p-1.5 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
+          className="w-full p-1 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
         />
       </td>
       <td className="px-4 py-2 border-r border-green-200 dark:border-green-700">
@@ -106,13 +106,13 @@ const EditableRow = memo(function EditableRow({
           type="number"
           value={row.amount || ''}
           onChange={(e) => handleNumericChange('amount', e.target.value)}
-          className="w-full p-1.5 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
+          className="w-full p-1 text-sm text-green-700 dark:text-green-300 bg-transparent border border-green-300 dark:border-green-600 rounded focus:ring-1 focus:ring-green-400 dark:focus:ring-green-500 focus:border-green-400 dark:focus:border-green-500"
         />
       </td>
       <td className="px-4 py-2">
         <button
           onClick={() => deleteRow(tableId, row.id || 0)}
-          className="p-1.5 text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none"
+          className="p-1 text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none"
           aria-label="Видалити рядок"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

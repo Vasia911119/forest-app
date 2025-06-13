@@ -431,7 +431,7 @@ export default function TableList({
   return (
     <div className="space-y-8">
               <button
-        className="mb-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        className="mb-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         onClick={() => setShowReferences(v => !v)}
                 type="button"
               >
