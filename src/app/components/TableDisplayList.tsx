@@ -168,7 +168,7 @@ const TableDisplayList = memo(function TableDisplayList({ tables }: TableDisplay
       {tables.map((table, idx) => (
         <div
           key={table.id ?? table._tmpId ?? idx}
-          className={`relative flex flex-col gap-4 p-2 sm:p-8 bg-white dark:bg-green-900 rounded-lg border border-green-200 dark:border-green-700 ${
+          className={`relative flex flex-col gap-4 p-2 sm:p-4 md:p-8 bg-white dark:bg-green-900 rounded-lg border border-green-200 dark:border-green-700 ${
             idx === 0 ? 'mt-16' : ''
           }`}
         >
