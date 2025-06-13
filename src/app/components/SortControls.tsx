@@ -28,7 +28,7 @@ const SortControls = memo(function SortControls({
 
   const getButtonClassName = (field: keyof Row) => {
     const isActive = sortBy === field;
-    return `relative px-6 py-3 text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+    return `relative px-3 py-3 text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
       isActive
         ? 'text-green-600 dark:text-green-400 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-green-600 dark:after:bg-green-400 font-semibold'
         : 'text-green-500 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-transparent hover:after:bg-green-200 dark:hover:after:bg-green-700'
@@ -43,8 +43,8 @@ const SortControls = memo(function SortControls({
   };
 
   return (
-    <div className="relative flex items-center border-b-2 border-green-200 dark:border-green-700 mb-4">
-      <div className="flex items-center">
+    <div className="relative flex items-center border-b-2 border-green-200 dark:border-green-700">
+      <div className="flex flex-wrap items-center">
         <button
           onClick={() => handleSort('forest')}
           className={getButtonClassName('forest')}
