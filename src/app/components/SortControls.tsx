@@ -1,5 +1,6 @@
 import { memo, useCallback } from 'react';
 import type { Row } from '../types';
+import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 interface SortControlsProps {
   tableIdx: number;
@@ -25,62 +26,80 @@ const SortControls = memo(function SortControls({
     }
   }, [tableIdx, sortBy, sortOrder, updateSortBy, updateSortOrder]);
 
-  const getButtonClassName = useCallback((field: keyof Row) => {
-    return `px-2 py-1 border rounded transition-colors duration-200 hover:bg-blue-50 dark:hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 ${
-      sortBy === field ? 'bg-blue-100 dark:bg-blue-800' : ''
+  const getButtonClassName = (field: keyof Row) => {
+    const isActive = sortBy === field;
+    return `relative px-6 py-3 text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+      isActive
+        ? 'text-green-600 dark:text-green-400 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-green-600 dark:after:bg-green-400 font-semibold'
+        : 'text-green-500 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-transparent hover:after:bg-green-200 dark:hover:after:bg-green-700'
     }`;
-  }, [sortBy]);
+  };
+
+  const getSortIcon = (field: keyof Row) => {
+    if (sortBy !== field) {
+      return <FaSort className="w-4 h-4 opacity-40" />;
+    }
+    return sortOrder === 'asc' ? <FaSortUp className="w-4 h-4" /> : <FaSortDown className="w-4 h-4" />;
+  };
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        onClick={() => handleSort('forest')}
-        className={getButtonClassName('forest')}
-        type="button"
-        aria-label={`Сортувати по лісництву ${sortBy === 'forest' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
-      >
-        Лісництво {sortBy === 'forest' && (sortOrder === 'asc' ? '↑' : '↓')}
-      </button>
-      <button
-        onClick={() => handleSort('buyer')}
-        className={getButtonClassName('buyer')}
-        type="button"
-        aria-label={`Сортувати по покупцю ${sortBy === 'buyer' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
-      >
-        Покупець {sortBy === 'buyer' && (sortOrder === 'asc' ? '↑' : '↓')}
-      </button>
-      <button
-        onClick={() => handleSort('product')}
-        className={getButtonClassName('product')}
-        type="button"
-        aria-label={`Сортувати по продукції ${sortBy === 'product' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
-      >
-        Продукція {sortBy === 'product' && (sortOrder === 'asc' ? '↑' : '↓')}
-      </button>
-      <button
-        onClick={() => handleSort('species')}
-        className={getButtonClassName('species')}
-        type="button"
-        aria-label={`Сортувати по породі ${sortBy === 'species' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
-      >
-        Порода {sortBy === 'species' && (sortOrder === 'asc' ? '↑' : '↓')}
-      </button>
-      <button
-        onClick={() => handleSort('volume')}
-        className={getButtonClassName('volume')}
-        type="button"
-        aria-label={`Сортувати по об'єму ${sortBy === 'volume' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
-      >
-        Об&apos;єм {sortBy === 'volume' && (sortOrder === 'asc' ? '↑' : '↓')}
-      </button>
-      <button
-        onClick={() => handleSort('amount')}
-        className={getButtonClassName('amount')}
-        type="button"
-        aria-label={`Сортувати по сумі ${sortBy === 'amount' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
-      >
-        Сума {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
-      </button>
+    <div className="relative flex items-center border-b-2 border-green-200 dark:border-green-700 mb-4">
+      <div className="flex items-center">
+        <button
+          onClick={() => handleSort('forest')}
+          className={getButtonClassName('forest')}
+          type="button"
+          aria-label={`Сортувати по лісництву ${sortBy === 'forest' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
+        >
+          <span>Лісництво</span>
+          {getSortIcon('forest')}
+        </button>
+        <button
+          onClick={() => handleSort('buyer')}
+          className={getButtonClassName('buyer')}
+          type="button"
+          aria-label={`Сортувати по покупцю ${sortBy === 'buyer' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
+        >
+          <span>Покупець</span>
+          {getSortIcon('buyer')}
+        </button>
+        <button
+          onClick={() => handleSort('product')}
+          className={getButtonClassName('product')}
+          type="button"
+          aria-label={`Сортувати по продукції ${sortBy === 'product' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
+        >
+          <span>Продукція</span>
+          {getSortIcon('product')}
+        </button>
+        <button
+          onClick={() => handleSort('species')}
+          className={getButtonClassName('species')}
+          type="button"
+          aria-label={`Сортувати по породі ${sortBy === 'species' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
+        >
+          <span>Порода</span>
+          {getSortIcon('species')}
+        </button>
+        <button
+          onClick={() => handleSort('volume')}
+          className={getButtonClassName('volume')}
+          type="button"
+          aria-label={`Сортувати за об'ємом ${sortBy === 'volume' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
+        >
+          <span>Об&apos;єм</span>
+          {getSortIcon('volume')}
+        </button>
+        <button
+          onClick={() => handleSort('amount')}
+          className={getButtonClassName('amount')}
+          type="button"
+          aria-label={`Сортувати за сумою ${sortBy === 'amount' ? (sortOrder === 'asc' ? 'за зростанням' : 'за спаданням') : ''}`}
+        >
+          <span>Сума</span>
+          {getSortIcon('amount')}
+        </button>
+      </div>
     </div>
   );
 });

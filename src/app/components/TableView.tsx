@@ -55,7 +55,7 @@ export default function TableView() {
   return (
     <div className="container mx-auto px-4">
       {tables.length === 0 ? (
-        <p className="text-center text-gray-500 my-4">
+        <p className="text-center text-green-500 my-4">
           Немає таблиць для відображення
         </p>
       ) : (

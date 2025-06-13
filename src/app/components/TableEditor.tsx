@@ -294,7 +294,7 @@ export default function TableEditor() {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowDateModal(false)}
-                className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                className="px-3 py-1 rounded bg-green-200 hover:bg-green-300"
                 type="button"
               >Скасувати</button>
               <button

@@ -6,6 +6,7 @@ import DataTable from './DataTable';
 import FilterControls from './FilterControls';
 import SortControls from './SortControls';
 import ChartDisplay from './ChartDisplay';
+import { FaRegCalendarAlt } from 'react-icons/fa';
 
 interface TableDisplayListProps {
   tables: TableData[];
@@ -156,63 +157,48 @@ const TableDisplayList = memo(function TableDisplayList({ tables }: TableDisplay
 
   if (!Array.isArray(tables) || tables.length === 0) {
     return (
-      <div className="text-center text-gray-500 my-4">
+      <div className="text-center text-green-500 my-4">
         Немає таблиць для відображення
       </div>
     );
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-12">
       {tables.map((table, idx) => (
-        <div key={table.id ?? table._tmpId ?? idx} className="mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-            <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-bold">
-                Орієнтовний план реалізації на {new Date(table.date).toLocaleDateString('uk-UA')}
+        <div
+          key={table.id ?? table._tmpId ?? idx}
+          className={`relative flex flex-col gap-4 p-8 bg-white dark:bg-green-900 rounded-lg border border-green-200 dark:border-green-700 ${
+            idx === 0 ? 'mt-16' : ''
+          }`}
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-200 via-green-400 to-green-200 dark:from-green-700 dark:via-green-500 dark:to-green-700"></div>
+          
+          <h2 className="text-2xl font-semibold text-green-800 dark:text-green-200 flex items-center gap-2">
+            <FaRegCalendarAlt className="w-6 h-6 text-green-600 dark:text-green-400" />
+            Орієнтовний план реалізації на {new Date(table.date).toLocaleDateString('uk-UA')}
       </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="col-span-1">
-                  <FilterControls
-                    tableIdx={idx}
+          
+          <div className="w-full mb-4 flex flex-col gap-4">
+            <div className="flex flex-col md:flex-row gap-4 items-start">
+              <div className="w-full">
+                <FilterControls
+                  tableIdx={idx}
       filter={filters[idx] ?? { forest: '', buyer: '', species: '' }}
-                    updateFilter={updateFilter}
-                  />
-                </div>
-                
-                <div className="col-span-1">
-                  <SortControls
-                    tableIdx={idx}
+                  updateFilter={updateFilter}
+                  forests={Array.from(new Set(table.rows.map(row => row.forest)))}
+                  buyers={Array.from(new Set(table.rows.map(row => row.buyer)))}
+                  speciesList={Array.from(new Set(table.rows.map(row => row.species)))}
+                />
+              </div>
+              <div className="w-full">
+                <SortControls
+                  tableIdx={idx}
       sortBy={sortBys[idx] ?? null}
       sortOrder={sortOrders[idx] ?? 'asc'}
-                    updateSortBy={updateSortBy}
-                    updateSortOrder={updateSortOrder}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <button
-                  onClick={() => updateShowChart(idx, !showCharts[idx])}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-                  type="button"
-                  aria-label={showCharts[idx] ? 'Приховати графік' : 'Показати графік'}
-                >
-                  {showCharts[idx] ? 'Приховати графік' : 'Показати графік'}
-                </button>
-
-                <button
-                  onClick={() => handleExport(idx)}
-                  disabled={isExporting[idx]}
-                  className={`px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
-                    isExporting[idx] ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  type="button"
-                  aria-label={isExporting[idx] ? 'Експорт в процесі...' : 'Експортувати в Excel'}
-                >
-                  {isExporting[idx] ? 'Експорт...' : 'Експортувати в Excel'}
-                </button>
+                  updateSortBy={updateSortBy}
+                  updateSortOrder={updateSortOrder}
+    />
               </div>
             </div>
           </div>
@@ -235,6 +221,29 @@ const TableDisplayList = memo(function TableDisplayList({ tables }: TableDisplay
     />
           </div>
 
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={() => updateShowChart(idx, !showCharts[idx])}
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+              type="button"
+              aria-label={showCharts[idx] ? 'Приховати графік' : 'Показати графік'}
+            >
+              {showCharts[idx] ? 'Приховати графік' : 'Показати графік'}
+            </button>
+
+            <button
+              onClick={() => handleExport(idx)}
+              disabled={isExporting[idx]}
+              className={`px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
+                isExporting[idx] ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              type="button"
+              aria-label={isExporting[idx] ? 'Експорт в процесі...' : 'Експортувати в Excel'}
+            >
+              {isExporting[idx] ? 'Експорт...' : 'Експортувати в Excel'}
+            </button>
+          </div>
+
           {showCharts[idx] && (
             <div className="mt-4">
               <ChartDisplay
@@ -246,7 +255,7 @@ const TableDisplayList = memo(function TableDisplayList({ tables }: TableDisplay
           )}
   </div>
 ))}
-    </>
+    </div>
   );
 });
 

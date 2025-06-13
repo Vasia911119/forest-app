@@ -81,66 +81,66 @@ export default function ChartDisplay({ filteredAndSortedRows, totalVolume, total
   };
 
   const commonOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
         position: 'top' as const,
-        labels: {
-          font: { size: 14 },
-          color: '#2E7D32',
-        },
-      },
-      title: {
-        display: true,
+                labels: {
+                  font: { size: 14 },
+                  color: '#2E7D32',
+                },
+              },
+              title: {
+                display: true,
         text: `Об'єм за підрозділами (м³) - Всього: ${totalVolume} м³, ${totalAmount} грн`,
         font: { size: 18, weight: 'bold' as const },
-        color: '#2E7D32',
-      },
-    },
+                color: '#2E7D32',
+              },
+            },
   };
 
   const barOptions: ChartOptions<'bar'> = {
     ...commonOptions,
-    scales: {
-      y: {
-        beginAtZero: true,
-        title: {
-          display: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
           text: 'Об\'єм (м³)',
-          font: { size: 14 },
-          color: '#2E7D32',
-        },
-        ticks: {
-          font: { size: 12 },
-          color: '#4CAF50',
-        },
-        grid: {
-          color: '#E0F2E9',
-          lineWidth: 0.5,
-        },
-      },
-      x: {
-        title: {
-          display: true,
-          text: 'Підрозділ',
-          font: { size: 14 },
-          color: '#2E7D32',
-        },
-        ticks: {
-          font: { size: 12 },
-          color: '#4CAF50',
-          maxRotation: 45,
-          minRotation: 45,
-        },
-        grid: {
-          display: false,
-        },
-      },
-    },
-    layout: {
-      padding: { top: 10, bottom: 10, left: 10, right: 10 },
-    },
+                  font: { size: 14 },
+                  color: '#2E7D32',
+                },
+                ticks: {
+                  font: { size: 12 },
+                  color: '#4CAF50',
+                },
+                grid: {
+                  color: '#E0F2E9',
+                  lineWidth: 0.5,
+                },
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Підрозділ',
+                  font: { size: 14 },
+                  color: '#2E7D32',
+                },
+                ticks: {
+                  font: { size: 12 },
+                  color: '#4CAF50',
+                  maxRotation: 45,
+                  minRotation: 45,
+                },
+                grid: {
+                  display: false,
+                },
+              },
+            },
+            layout: {
+              padding: { top: 10, bottom: 10, left: 10, right: 10 },
+            },
   };
 
   const pieOptions: ChartOptions<'pie'> = {
@@ -149,7 +149,7 @@ export default function ChartDisplay({ filteredAndSortedRows, totalVolume, total
 
   if (!forestData.labels.length || !forestData.data.length) {
     return (
-      <div className="mt-4 h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+      <div className="mt-4 h-[300px] flex items-center justify-center text-green-500 dark:text-green-400">
         Немає даних для відображення
       </div>
     );

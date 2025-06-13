@@ -64,7 +64,7 @@ export default function TableList({
           ...table,
           rows: updatedRows
         };
-      }
+}
       return table;
     });
     
@@ -177,7 +177,7 @@ export default function TableList({
       console.error('Помилка оновлення дати:', error);
       alert(error instanceof Error ? error.message : 'Не вдалося оновити дату');
     }
-  }
+      }
 
   const addForest = async () => {
     if (!newForest.trim()) {
@@ -584,36 +584,36 @@ export default function TableList({
                   />
                   <button
                     onClick={addPurchase}
-                disabled={loadingPurchase}
+                    disabled={loadingPurchase}
                 className="w-full px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-              >
+                  >
                 {loadingPurchase ? 'Додавання...' : 'Додати покупку'}
-              </button>
-            </div>
+                  </button>
+                </div>
             <ul className="space-y-2">
               {purchases.map((purchase, index) => (
-                <li key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <li key={index} className="flex justify-between items-center p-2 bg-green-50 rounded">
                   <div>
                     <div className="font-semibold">{purchase.buyer}</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-green-600">
                       {purchase.product} - {purchase.species}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-green-600">
                       {purchase.volume} m³ - {purchase.amount} грн
                     </div>
                   </div>
-                  <button
-                    onClick={() => deletePurchase(purchase)}
-                    disabled={loadingPurchase}
+                      <button
+                        onClick={() => deletePurchase(purchase)}
+                        disabled={loadingPurchase}
                     className="text-red-500 hover:text-red-700"
-                  >
+                      >
                     ×
                       </button>
                     </li>
                   ))}
                 </ul>
-          </div>
-        </div>
+              </div>
+            </div>
       )}
       <div className="space-y-4">
         {tables.map((table, tableIndex) => (

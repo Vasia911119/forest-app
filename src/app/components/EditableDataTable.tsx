@@ -53,7 +53,7 @@ export default function EditableDataTable({
 
   if (!rows || !Array.isArray(rows)) {
     return (
-      <div className="text-center p-4 text-gray-500">
+      <div className="text-center p-4 text-green-500">
         Немає даних для відображення
       </div>
     );
@@ -61,28 +61,48 @@ export default function EditableDataTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse bg-white dark:bg-gray-900 dark:text-gray-100">
+      <table className="min-w-full border-collapse bg-white dark:bg-green-900">
         <thead>
-          <tr>
-            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('forest')}>
+          <tr className="bg-green-50 dark:bg-green-800">
+            <th 
+              className="px-4 py-3 text-left text-sm font-medium text-green-600 dark:text-green-300 border-b border-green-200 dark:border-green-700 border-r cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700" 
+              onClick={() => handleSort('forest')}
+            >
               Лісництво {sortBy === 'forest' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('buyer')}>
+            <th 
+              className="px-4 py-3 text-left text-sm font-medium text-green-600 dark:text-green-300 border-b border-green-200 dark:border-green-700 border-r cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700" 
+              onClick={() => handleSort('buyer')}
+            >
               Покупець {sortBy === 'buyer' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('product')}>
-              Продукція {sortBy === 'product' && (sortOrder === 'asc' ? '↑' : '↓')}
+            <th 
+              className="px-4 py-3 text-left text-sm font-medium text-green-600 dark:text-green-300 border-b border-green-200 dark:border-green-700 border-r cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700" 
+              onClick={() => handleSort('product')}
+            >
+              Найменування продукції {sortBy === 'product' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('species')}>
+            <th 
+              className="px-4 py-3 text-left text-sm font-medium text-green-600 dark:text-green-300 border-b border-green-200 dark:border-green-700 border-r cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700" 
+              onClick={() => handleSort('species')}
+            >
               Порода {sortBy === 'species' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('volume')}>
-              Об&apos;єм {sortBy === 'volume' && (sortOrder === 'asc' ? '↑' : '↓')}
+            <th 
+              className="px-4 py-3 text-left text-sm font-medium text-green-600 dark:text-green-300 border-b border-green-200 dark:border-green-700 border-r cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700" 
+              onClick={() => handleSort('volume')}
+            >
+              Орієнтовний об&apos;єм (м³) {sortBy === 'volume' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border dark:border-gray-700 cursor-pointer select-none" onClick={() => handleSort('amount')}>
-              Сума {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
+            <th 
+              className="px-4 py-3 text-left text-sm font-medium text-green-600 dark:text-green-300 border-b border-green-200 dark:border-green-700 border-r cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700" 
+              onClick={() => handleSort('amount')}
+            >
+              Орієнтовна сума без ПДВ (грн) {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
             </th>
-            <th className="px-4 py-2 border dark:border-gray-700">Дії</th>
+            <th className="px-4 py-3 text-left text-sm font-medium text-green-600 dark:text-green-300 border-b border-green-200 dark:border-green-700">
+              Дії
+            </th>
           </tr>
         </thead>
         <tbody>
