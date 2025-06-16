@@ -21,7 +21,7 @@ const Navbar = memo(function Navbar() {
         >
           Головна
         </Link>
-        <Link 
+        {/* <Link 
           href="/input" 
           className={`px-4 py-2 rounded transition-all duration-200 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${
             isActive('/input') ? 'bg-green-700 font-semibold' : ''
@@ -29,7 +29,7 @@ const Navbar = memo(function Navbar() {
           aria-current={isActive('/input') ? 'page' : undefined}
         >
           Ввід даних
-        </Link>
+        </Link> */}
       </div>
     </nav>
   );
