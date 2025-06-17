@@ -147,16 +147,16 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white dark:bg-green-900 divide-y divide-green-200 dark:divide-green-700">
+        <tbody className="divide-y divide-green-200 dark:divide-green-700">
           {filteredAndSortedRows.map((row, idx) => (
             <tr key={row.id ?? `row-${idx}`} className="hover:bg-green-50 dark:hover:bg-green-800 transition-colors duration-150">
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap bg-white dark:bg-green-900">{idx + 1}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap bg-white dark:bg-green-900">{row.forest}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap bg-white dark:bg-green-900">{row.buyer}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap bg-white dark:bg-green-900">{row.product}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap bg-white dark:bg-green-900">{row.species}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap bg-white dark:bg-green-900 text-right font-medium">{row.volume}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 whitespace-nowrap bg-white dark:bg-green-900 text-right font-medium">{row.amount}</td>
+              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{idx + 1}</td>
+              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.forest}</td>
+              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.buyer}</td>
+              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.product}</td>
+              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.species}</td>
+              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap text-right font-medium">{row.volume}</td>
+              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 whitespace-nowrap text-right font-medium">{row.amount}</td>
             </tr>
           ))}
         </tbody>

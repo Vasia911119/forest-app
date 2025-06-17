@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <div className="p-0 md:p-2 bg-white dark:bg-gray-900">
+    <div className="p-1 md:p-2 bg-white dark:bg-gray-900">
       {/* <h1 className="text-3xl sm:text-2xl md:text-4xl font-bold mb-4 sm:mb-2 text-center">
         Головна сторінка
       </h1> */}
