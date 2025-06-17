@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar = memo(function Navbar() {
   const pathname = usePathname();
@@ -30,6 +31,8 @@ const Navbar = memo(function Navbar() {
         >
           Ввід даних
         </Link> */}
+        <div className="flex-1" />
+        <ThemeToggle />
       </div>
     </nav>
   );
