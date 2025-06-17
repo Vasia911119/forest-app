@@ -172,7 +172,7 @@ const TableDisplayList = memo(function TableDisplayList({ tables }: TableDisplay
             idx === 0 ? 'mt-8' : ''
           }`}
         >
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-200 via-green-400 to-green-200 dark:from-green-700 dark:via-green-500 dark:to-green-700"></div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[99%] h-1 bg-gradient-to-r from-green-200 via-green-400 to-green-200 dark:from-green-700 dark:via-green-500 dark:to-green-700"></div>
           
           <h2 className="text-2xl font-semibold text-green-800 dark:text-green-200 flex items-center gap-2">
             <FaRegCalendarAlt className="w-6 h-6 text-green-600 dark:text-green-400" />
