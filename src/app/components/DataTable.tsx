@@ -48,10 +48,10 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
       <table className="w-full border border-green-400 dark:border-green-700 bg-white dark:bg-green-900 shadow-sm rounded-lg">
         <thead>
           <tr className="bg-green-50 dark:bg-green-800">
-            <th scope="col" className="md:px-2 py-2 text-left text-[6px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800">#</th>
+            <th scope="col" className="lg:px-2 py-2 text-left text-[6px] sm:text-[10px] xl:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800">#</th>
             <th
               scope="col"
-              className="md:px-2 py-2 text-left text-[6px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
+              className="lg:px-2 py-2 text-left text-[6px] sm:text-[10px] xl:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
               onClick={handleForestSort}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -67,7 +67,7 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
             </th>
             <th
               scope="col"
-              className="md:px-2 py-2 text-left text-[6px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
+              className="lg:px-2 py-2 text-left text-[6px] sm:text-[10px] xl:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
               onClick={handleBuyerSort}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -83,7 +83,7 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
             </th>
             <th
               scope="col"
-              className="md:px-2 py-2 text-left text-[6px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
+              className="lg:px-2 py-2 text-left text-[6px] sm:text-[10px] xl:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
               onClick={handleProductSort}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -99,7 +99,7 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
             </th>
             <th
               scope="col"
-              className="md:px-2 py-2 text-left text-[6px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
+              className="lg:px-2 py-2 text-left text-[6px] sm:text-[10px] xl:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
               onClick={handleSpeciesSort}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -115,7 +115,7 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
             </th>
             <th
               scope="col"
-              className="md:px-2 py-2 text-left text-[6px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
+              className="lg:px-2 py-2 text-left text-[6px] sm:text-[10px] xl:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
               onClick={handleVolumeSort}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -131,7 +131,7 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
             </th>
             <th
               scope="col"
-              className="md:px-2 py-2 text-left text-[6px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
+              className="lg:px-2 py-2 text-left text-[6px] sm:text-[10px] xl:text-xs font-bold uppercase tracking-wider text-green-800 dark:text-green-400 border-b-2 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 cursor-pointer select-none hover:bg-green-100 dark:hover:bg-green-700"
               onClick={handleAmountSort}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -150,21 +150,21 @@ export default function DataTable({ filteredAndSortedRows, totalVolume, totalAmo
         <tbody className="divide-y divide-green-200 dark:divide-green-700">
           {filteredAndSortedRows.map((row, idx) => (
             <tr key={row.id ?? `row-${idx}`} className="hover:bg-green-50 dark:hover:bg-green-800 transition-colors duration-150">
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{idx + 1}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.forest}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.buyer}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.product}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.species}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap text-right font-medium">{row.volume}</td>
-              <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base text-green-900 dark:text-green-300 whitespace-nowrap text-right font-medium">{row.amount}</td>
+              <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{idx + 1}</td>
+              <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.forest}</td>
+              <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.buyer}</td>
+              <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.product}</td>
+              <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap">{row.species}</td>
+              <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 whitespace-nowrap text-right font-medium">{row.volume}</td>
+              <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base text-green-900 dark:text-green-300 whitespace-nowrap text-right font-medium">{row.amount}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr className="bg-green-50 dark:bg-green-800 border-t-2 border-green-200 dark:border-green-700">
-            <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base font-bold text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800" colSpan={5}>Всього:</td>
-            <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base font-bold text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 text-right">{Math.round(totalVolume)}</td>
-            <td className="md:px-2 py-1 text-[6px] sm:text-[10px] md:text-base font-bold text-green-900 dark:text-green-300 bg-green-50 dark:bg-green-800 text-right">{Math.round(totalAmount)}</td>
+            <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base font-bold text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800" colSpan={5}>Всього:</td>
+            <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base font-bold text-green-900 dark:text-green-300 border-r border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-800 text-right">{Math.round(totalVolume)}</td>
+            <td className="lg:px-2 py-1 text-[6px] sm:text-[10px] xl:text-base font-bold text-green-900 dark:text-green-300 bg-green-50 dark:bg-green-800 text-right">{Math.round(totalAmount)}</td>
           </tr>
         </tfoot>
       </table>
