@@ -169,7 +169,7 @@ const TableDisplayList = memo(function TableDisplayList({ tables }: TableDisplay
         <div
           key={table.id ?? table._tmpId ?? idx}
           className={`relative flex flex-col gap-4 p-2 sm:p-4 md:p-8 bg-white dark:bg-green-900 rounded-lg border border-green-200 dark:border-green-700 ${
-            idx === 0 ? 'mt-16' : ''
+            idx === 0 ? 'mt-8' : ''
           }`}
         >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-200 via-green-400 to-green-200 dark:from-green-700 dark:via-green-500 dark:to-green-700"></div>

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { FaTree } from 'react-icons/fa';
+import { MdForest } from 'react-icons/md';
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -29,14 +31,14 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="ml-2 p-2 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      className="fixed z-50 sm:static sm:ml-2 right-4 top-4 sm:top-auto p-2 rounded-full border border-green-400 dark:border-green-700 bg-white dark:bg-green-900 hover:bg-green-100 dark:hover:bg-green-800 transition-colors shadow"
       aria-label="Перемкнути тему"
       title={theme === 'light' ? 'Увімкнути темну тему' : 'Увімкнути світлу тему'}
     >
       {theme === 'light' ? (
-        <span role="img" aria-label="Темна тема">🌙</span>
+        <FaTree className="w-6 h-6 text-green-700" title="Світла тема: ліс" />
       ) : (
-        <span role="img" aria-label="Світла тема">☀️</span>
+        <MdForest className="w-6 h-6 text-green-300" title="Темна тема: ліс" />
       )}
     </button>
   );
