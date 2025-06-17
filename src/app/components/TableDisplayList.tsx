@@ -179,7 +179,7 @@ const TableDisplayList = memo(function TableDisplayList({ tables }: TableDisplay
             Орієнтовний план реалізації на {new Date(table.date).toLocaleDateString('uk-UA')}
       </h2>
           
-          <div className="w-full mb-4 flex flex-col gap-4">
+          <div className="w-full sm:mb-4 flex flex-col gap-4">
             <div className="flex flex-col md:flex-row gap-4 items-start">
               <div className="w-full">
                 <FilterControls
@@ -203,7 +203,7 @@ const TableDisplayList = memo(function TableDisplayList({ tables }: TableDisplay
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="sm:mt-4">
     <DataTable
       filteredAndSortedRows={filteredAndSortedRowsList[idx] ?? []}
       totalVolume={totalsList[idx]?.totalVolume ?? 0}
@@ -221,7 +221,7 @@ const TableDisplayList = memo(function TableDisplayList({ tables }: TableDisplay
     />
           </div>
 
-          <div className="flex justify-between items-center mt-4">
+          <div className="flex justify-between items-center sm:mt-4">
             <button
               onClick={() => updateShowChart(idx, !showCharts[idx])}
               className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
