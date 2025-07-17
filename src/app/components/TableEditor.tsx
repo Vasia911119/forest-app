@@ -82,34 +82,42 @@ export default function TableEditor() {
     }));
   }
 
+  // Окрема асинхронна функція для збереження
+  const asyncSave = async (rawData: { tables: TableData[] }): Promise<{ error?: string } | null> => {
+    const data = { tables: sanitizeTables(rawData.tables) };
+    try {
+      const res = await fetch('/api/tables', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        let text = '';
+        try { text = await res.text(); } catch {}
+        throw new Error('Не вдалося зберегти дані. Сервер відповів: ' + text);
+      }
+      const responseData = await res.json();
+      return responseData;
+    } catch (error) {
+      console.error('Помилка збереження:', error);
+      alert('Не вдалося зберегти дані: ' + (error instanceof Error ? error.message : error));
+      return null;
+    }
+  };
+
+  // Debounced версія (для автозбереження, якщо треба)
   const debouncedSave = useMemo(
-    () =>
-      debounce(async (rawData: { tables: TableData[] }) => {
-        const data = { tables: sanitizeTables(rawData.tables) };
-        // console.log('debouncedSave payload:', JSON.stringify(data, null, 2));
-        try {
-          const res = await fetch('/api/tables', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-          });
-          if (!res.ok) {
-            let text = '';
-            try {
-              text = await res.text();
-            } catch {}
-            throw new Error('Не вдалося зберегти дані. Сервер відповів: ' + text);
-          }
-          const responseData = await res.json();
-          return responseData;
-        } catch (error) {
-          console.error('Помилка збереження:', error);
-          alert('Не вдалося зберегти дані: ' + (error instanceof Error ? error.message : error));
-          return null;
-        }
-      }, 1000),
+    () => debounce(asyncSave, 1000),
     []
   );
+
+  // Додаю обгортку для debouncedSave, щоб тип відповідав пропсам TableList
+  // const debouncedSavePromise = (data: { tables: TableData[] }) => {
+  //   return new Promise<{ error?: string } | null>((resolve) => {
+  //     // debouncedSave повертає Promise<any>, але resolve приймає результат
+  //     debouncedSave!(data).then(resolve);
+  //   });
+  // };
 
   // Додаємо таблицю через модалку з вибором дати
   const openDateModal = useCallback(() => {
@@ -253,7 +261,7 @@ export default function TableEditor() {
       <TableList
         tables={tables}
         setTables={setTables}
-        debouncedSave={debouncedSave}
+        debouncedSave={asyncSave}
         deleteTable={deleteTable}
         deleteRow={deleteRow}
         addRow={addRow}

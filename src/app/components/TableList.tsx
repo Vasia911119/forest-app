@@ -7,7 +7,7 @@ import type { Row, TableData, Purchase } from '../types';
 interface TableListProps {
   tables: TableData[];
   setTables: (tables: TableData[]) => void;
-  debouncedSave: (data: { tables: TableData[] }) => void;
+  debouncedSave: (data: { tables: TableData[] }) => Promise<{ error?: string } | null>;
   deleteTable: (id: number) => void;
   deleteRow: (tableId: number, rowId: number) => Promise<void>;
   addRow: (tableId: number) => Promise<void>;
@@ -48,6 +48,9 @@ export default function TableList({
   const [loadingPurchase, setLoadingPurchase] = useState(false);
 
   const [showReferences, setShowReferences] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const handleFieldChange = useCallback((tableId: number, rowIndex: number, field: keyof Row, value: string | number) => {
     const updatedTables = tables.map(table => {
@@ -69,8 +72,8 @@ export default function TableList({
     });
     
     setTables(updatedTables);
-    debouncedSave({ tables: updatedTables });
-  }, [tables, debouncedSave, setTables]);
+    // debouncedSave({ tables: updatedTables }); // Видалено автозбереження
+  }, [tables, setTables]);
 
   const handleBuyerChange = useCallback((tableId: number, rowIndex: number, buyer: string) => {
     const updatedTables = tables.map(table => {
@@ -109,8 +112,8 @@ export default function TableList({
     });
     
     setTables(updatedTables);
-    debouncedSave({ tables: updatedTables });
-  }, [tables, purchases, debouncedSave, setTables]);
+    // debouncedSave({ tables: updatedTables }); // Видалено автозбереження
+  }, [tables, purchases, setTables]);
 
   async function setDate(tableId: number, date: string) {
     if (!date) {
@@ -172,7 +175,7 @@ export default function TableList({
         setTables(newTables);
       }
 
-        debouncedSave({ tables: newTables });
+        // debouncedSave({ tables: newTables }); // Видалено автозбереження
     } catch (error) {
       console.error('Помилка оновлення дати:', error);
       alert(error instanceof Error ? error.message : 'Не вдалося оновити дату');
@@ -428,6 +431,32 @@ export default function TableList({
     }
   };
 
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveMessage(null);
+    setSaveError(null);
+    try {
+      const result = await debouncedSave({ tables });
+      if (result === null || result?.error) {
+        setSaveError(result?.error || 'Сталася помилка при збереженні');
+      } else {
+        setSaveMessage('Дані успішно збережено!');
+      }
+    } catch (e: unknown) {
+      if (typeof e === 'object' && e !== null && 'message' in e) {
+        setSaveError((e as { message?: string }).message || 'Сталася помилка при збереженні');
+      } else {
+        setSaveError('Сталася помилка при збереженні');
+      }
+    } finally {
+      setSaving(false);
+      setTimeout(() => {
+        setSaveMessage(null);
+        setSaveError(null);
+      }, 4000);
+    }
+  };
+
   return (
     <div className="space-y-8">
               <button
@@ -663,6 +692,45 @@ export default function TableList({
           </div>
         ))}
       </div>
+      <div className="flex justify-end mt-8 flex-col items-end gap-2">
+        <button
+          className="bg-emerald-600 text-white px-6 py-3 rounded shadow-lg hover:bg-emerald-700 disabled:opacity-60"
+          onClick={handleSave}
+          type="button"
+          disabled={saving}
+        >
+          {saving ? 'Збереження...' : 'Записати дані'}
+        </button>
+      </div>
+      {/* Модальне повідомлення */}
+      {saveMessage && (
+        <ModalMessage message={saveMessage} type="success" />
+      )}
+      {saveError && (
+        <ModalMessage message={saveError} type="error" />
+      )}
     </div>
   );
 }
+
+// Додаю стилі для модального повідомлення
+const ModalMessage = ({ message, type }: { message: string, type: 'success' | 'error' }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 animate-fade-in">
+    <div className={`px-8 py-6 rounded-lg shadow-xl text-lg font-semibold transition-all duration-300
+      ${type === 'success' ? 'bg-green-50 text-green-700 border border-green-300' : 'bg-red-50 text-red-700 border border-red-300'}`}
+    >
+      {message}
+    </div>
+  </div>
+);
+
+// Додаю просту анімацію fade-in
+<style jsx global>{`
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .animate-fade-in {
+    animation: fade-in 0.3s;
+  }
+`}</style>
